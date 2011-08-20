@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="chrome=1"> <!-- for Chromium IE Redirect //FOR GCF BRENDAN,CAN YOU HAVE A LOOK?-->
+
+	<link href="css/ui-lightness/jquery-ui-1.8.15.custom.css" type="text/css" rel="Stylesheet" />	<!--  jQuery UI stylesheet-->
+	<link href="css/PinTweets.css" type="text/css" rel="stylesheet" /> <!--  css file-->
+	<link href="http://fonts.googleapis.com/css?family=Lobster" rel="stylesheet" type="text/css"/> <!-- font -->
+	<link href="http://dl.dropbox.com/u/25210481/Pin-Tweets/images/blue_MarkerT.png" rel="icon" type="image/png">  <!--FAVICON DOES NOT WORK IN FIREFOX, SAFARI, CHANGE TO PINTWEETS.COM-->
+
+	<script type="text/javascript" src="http://www.google.com/jsapi"></script> <!-- JavaScript-->
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js"></script> <!-- for Chromium IE Redirect //FOR GCF BRENDAN,CAN YOU HAVE A LOOK?-->
+	<script type="text/javascript" src="js/jquery-1.6.2.min.js"></script> <!-- jQuery-->
+	<script type="text/javascript" src="js/jquery-ui-1.8.15.custom.min.js"></script> <!--  jQuery UI -->
+	<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script> <!-- Google Maps-->
+	<script type="text/javascript" src="js/PinTweets.js"></script> <!--purpose-built JavaScript-->
+
+	<script type="text/javascript">
+	
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-25206950-1']);
+	  _gaq.push(['_trackPageview']);
+	
+	  (function() {
+	    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+	
+	</script>
+
+	<title>Tweet Tracker</title>
+  
+</head>
+
+<body>
+	<div id="wrapper">
+		
+		<div id="header">
+			<h1>Pin Tweets</h1>
+		</div>
+	
+		<ul class="topnav above">  
+			<li id="MapLabel">
+				<div title="Show map">Map</div>  
+			</li>  
+			<li id="AboutLabel">
+				<div title="Show website information">About</div>
+			</li>
+			<li id="ContactLabel">
+				<div title="Contact the developer">Contact</div>  
+			</li>  
+		</ul>  
+
+		<!--Canvas Possibilities-->
+		<div class="canvas" id="Map">
+			Loading Tweets...
+		</div>
+		<div class="canvas canvasText" id="no_results">
+			<h2>No Tweets found.</h2>
+			<h2>Please modify your search or try again later.</h2>
+		</div>
+		<div class="canvas canvasText" id="no_location">
+			<h2>Tweets found, but none are geocoded.</h2>
+			<h2>Please modify your search or try again later.</h2>
+		</div>
+		<div class="canvas canvasText" id="breached">
+			<h2>You have exceeded Twitter's hourly limit for the number of searches.</h2>
+		</div>
+		<div class="canvas canvasText" id="About">
+			<h3>"Facebook feels like a mall. Twitter feels like the street."</br>    -William Gibson</h3>
+			<p>As succinct as this comment is, in one important aspect it is not true. On the street, geography is paramount. On Twitter, it is a little line in a user profile.</p>
+			<p>This website seeks to restore geography's place in the wonderful absurdity that is Twitter. Enjoy.</p>
+			<h3>Are you some kind of CIA-sponsored hacker?</h3>
+			<p>I wish. Any Tweets displayed from a public (as opposed to protected) account. Such Tweets can be readily accessed through Twitter. This website simply displays them geographically.</p>
+			<h3>How do you determine the location of Tweets?</h3>
+			<p>When someone geocodes his or her Tweets from a phone, I take that location. More often, I use Google's geocoding service to determine the coordinates of the location given in one's Twitter profile.</p>
+			<h3>My Tweets, or my child's Tweets, are on this map and I do not want them to be. What can I do?</h3>
+			<p>If you are tweeting your exact location, either disable the geocoding function of the Twitter account or make the account protected. If you are not, first ask yourself if you really care that the Tweets are always marked someplace downtown. If you do, either erase the location from your Twitter profile or make the account protected.</p>
+			<h3>My Tweets are not on this map and I want them to be. What can I do?</h3>
+			<p>First, make sure the Twitter account is public. Then, if you want your exact location displayed, enable the geocoding function. If you want the same location displayed for each of your Tweets, type that location in your profile. Note that if you do both, the exact location will be marked whenever possible.</p>
+			<h3>I use the pin and I get a cluster of results near it and then two in other continents. Why?</h3>
+			<p>One possibility is Retweets. Someone near your pin retweeted someone elsewhere. When Twitter allows me to address this situation, I will. Another is that, during the course of handling 200 million daily Tweets, Twitter simply returned incorrect information.</p>
+			<h3>I see a profile whose location is "The World" and its Tweets show up in the Hague. Why?</h3>
+			<p>In such ambiguous situations, Google's geocoding service takes a best guess. It is often ingenious, sometimes whimsical, and other times grossly inaccurate. "TO," a common moniker for Toronto, is apparently in the middle of Brazil. I have considered ways to avoid displaying such locations, but none are foolproof and all will take time to program. Remember that no information from this site will ever be admissible in any self-respecting court of law. Pin Tweets if for fun.</p>
+			<h3>Is there anyone you would like to acknowledge?</h3>
+			<p>I send my respect and appreciation to Brendan Nee and Justin Martinez for lending me their expertise in developing this website.</p>
+		</div>
+		<div class="canvas canvasText" id="Contact">
+			<h3>Like so many websites, Pin Tweets is the project of a Berkeley grad student with some time in August.  Feel free to contact me, Daniel Vizzini, at <b><a href= "mailto:dvizzini@pintweets.com" target="_blank">dvizzini@pintweets.com</a></b>. Follow me at <a href="http://twitter.com/#!/vizzmaster" target="_blank">@vizzmaster</a>.</h3>
+		</div>
+			
+		<div id="sidebar">
+			<ul class="topnav middle"> 
+				<li id="SearchLabel">
+					<div title="Show search form">Search</div>  
+				</li>  
+				<li id="ResultLabel">
+					<div title="Show tweets at selected marker">Result</div>  
+				</li>  
+			</ul> 
+			<span class = "sideCanvas" id="Search">
+				<form method="get" id="searchForm">
+					<fieldset class="search" title="Enable pin placement">
+						<div>Click the "Pin" button, place pin on map and enter radius in miles:</div>
+						<div class="box"id ="pinButton">Pin</div> <input type="text" class="box" id="radius">
+						<div style="clear: both;"></div>
+						<div>Enter content (including hashtags):</div>
+						<input type="text" class="box" id="tweetContent" value="#godblessamerica">
+						<div>From user (with or without "@"):</div>
+						<input type="text" class="box" id="from">
+						<div>To user (with or without "@"):</div>
+						<input type="text" class="box" id="to">
+						<div>Since (yyyy-mm-dd):</div>
+						<input type="text" class="box date" id="since">
+						<div>Until (yyyy-mm-dd):</div>
+						<input type="text" class="box date" id="until">
+						<div id="refreshMap" title="Refreshe map with above criteria">Refresh Map</div>
+						<img id="loader" src="images/ajax-loader.gif" alt="Loading Tweets..." />
+					</fieldset>
+				</form>
+			</span>
+			<span class = "sideCanvas" id="Result">
+					<div class="search sidebarContentTitle" id="resultText">Select a marker on the map to see the content of its Tweet.</div>
+			</span>
+		</div>
+
+		<div style="clear: both;"></div>
+			
+		<ul class="topnav below"></ul>  
+
+		<div id="caption"></div>
+		
+	</div>
+</body>
+</html>

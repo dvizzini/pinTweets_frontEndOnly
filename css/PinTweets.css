@@ -1,0 +1,284 @@
+/* 
+CSS rules to use for styling the overlay:
+  .chromeFrameOverlayContent
+  .chromeFrameOverlayContent iframe
+  .chromeFrameOverlayCloseBar
+  .chromeFrameOverlayUnderlay
+*/
+   
+body{
+	background:#333;
+	margin:0;
+	padding:0;
+}
+
+a {
+	text-decoration:none;
+	color: green;
+}
+
+a:hover{
+	text-decoration:underline;
+}
+
+img{ 
+	vertical-align:middle;
+	display:block; /*allows the element to take auto margins*/ 
+	margin:0 auto; /*centers in compliant browsers*/ 
+	text-align:center; /*centers in old versions of IE*/ 
+}
+
+ul.topnav {
+	border-top: 2px solid black;
+	border-bottom: 2px solid black;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	height: 20px;
+	background: #222;
+	font-size: 1em;
+}
+
+ul li{
+	float: left;
+	text-align:center;
+	padding: 0 0 0 10px;
+}
+
+ul.middle{
+	margin:10px 0 0 0;
+}
+
+ul.middle li{
+	padding: 0;
+}
+
+ul.below{
+	margin:0 0 10px 0;
+}
+
+ul.topnav li div{
+	text-align:center;
+	color:#FFF
+}
+
+ul.topnav li div:hover{
+	cursor:pointer;
+	font-weight:bold;
+	color:#FFF
+}
+
+.search {
+	border: none;
+	float: left;
+	padding: 8px 5px 0 0;
+}
+.search input#radius {
+	width: 156px;
+	margin-left:10px;
+	float:left;
+}
+.search input.box {
+	color: #fff;
+	font-size: .8em;
+	width: 200px;
+	height: 15px;
+	background: #616161;
+	margin-right: 5px;
+	margin-bottom: 5px;
+	border:1px solid black;	
+}
+.search input.box:focus {
+	background: #616161;
+	outline: none;
+}
+.search div{
+	font-size: .75em;
+}
+
+.search #pinButton{
+	font-family: 'Lobster', cursive;
+	font-size: .8em;
+	text-align:center;
+	width:30px;
+	border:1px solid #FF6A00;
+	background-color:#FFC400;
+	float:left;
+}
+
+.search #pinButton:hover{
+	cursor: pointer;
+}
+	/* jQuery UI Datepicker 1.8.14 modification*/
+.ui-datepicker {
+	font-size:70%;
+}
+/* end of jQuery UI Datepicker 1.8.14 modification*/
+
+.canvas{
+	height:600px;
+	float:left;
+	text-align:center;
+	padding-top:10px;
+	padding-bottom:10px;
+	position: relative;
+	font-family: 'Lobster', cursive;
+	overflow:auto;
+	display:none;
+}
+
+.canvas h2{
+	margin:0 0 10px 0;
+}
+
+.canvas h3{
+	text-align:left;
+	margin:0 0 10px 0;
+}
+
+.canvas p{
+	text-align:left;
+	font-family:Arial;
+	margin:0 0 10px 0;
+}
+
+.sideCanvas{
+	display:none;
+	float:right;
+	width:213px;
+	height:586px;
+	margin-left: 5px;
+	overflow-x:hidden;
+	overflow-y:auto;
+}
+
+.sideCanvas div.sidebarContent{
+	font-size:.8em;
+}
+
+.sideCanvas div.sidebarContentTime{
+	font-size:.8em;
+	font-style:italic;
+}
+	
+.sideCanvas div.sidebarContentTitle{
+	font-size:.8em;
+	font-weight:bold;
+}
+
+.captionDiv{
+	margin: 0;
+	border-bottom:1px solid black;
+	overflow:hidden;
+}
+
+.captionLetter{
+	height:65px;
+	color:black;
+	text-decoration:none;
+	font-size:4em;
+	text-align:center;
+	float:left;
+	width: 65px;
+	margin:-4px 10px 0 10px;
+	cursor: pointer;
+}
+
+.captionLetter:hover{
+	color:green;
+}
+
+.captionPic{
+	height:48px;
+	width: 48px;
+	float:left;
+	margin-right:8px;
+	margin-top:8px;
+}
+
+.captionContent{
+	height:61px;
+	font-size:1.5em;
+	float:left;
+	margin-top:4px;
+	overflow: auto;
+}
+	
+#wrapper{
+	border-top: 2px solid black;
+	border-right: 2px solid black;
+	border-bottom:1px solid black;
+	border-left: 2px solid black;
+	width:90%;
+	margin:10px auto;
+	background: rgb(180,180,180);
+}
+ 
+#header{
+	margin:0;
+	padding:0;
+	overflow:hidden;
+}
+ 
+#header h1{
+	font-family: 'Lobster', cursive;
+	text-align:center;
+	font-size:5em;
+	margin:10px auto;
+}
+
+#sidebar{
+	width: 218px;
+	height: 620px;
+	background: rgb(140,140,140);
+	border-left:2px solid black;		
+	float:right;
+}
+ 
+#refreshMap{
+	font-family: 'Lobster', cursive;
+	cursor: pointer;
+	font-size:1.2em;
+}
+
+#refreshMap:hover{
+	color:green;
+}
+
+#placeMenu{
+	font-family: 'Lobster', cursive;
+	cursor: pointer;
+	font-size:1em;
+}
+
+#placeMenu:hover{
+	color:green;
+}
+
+#loader{
+	position:relative;
+	top:2em;
+}
+
+#Map{
+	padding:0;
+	margin:10px 0;
+	display:inline;
+}
+
+#Search{
+	display:inline;
+}
+
+#MapLabel{
+	width:32px;
+	padding: 0 0 0 15px;
+}
+
+#ContactLabel{
+	width:52px;
+}
+
+#AboutLabel{
+	width:46px;
+}
