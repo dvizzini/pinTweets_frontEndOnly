@@ -269,14 +269,14 @@ function highlight(marker) {
 
     changeCanvas('Result');
 
-    $.each(global.content,function() {
+    $.each(global.markers,function() {
         this.setIcon('images/blue_Marker' + String.fromCharCode(parseInt(this.key)+65) +'.png');
-        maxZIndex = Math.max(maxZIndex, this.marker.ZIndex);
+        maxZIndex = Math.max(maxZIndex, this.ZIndex);
     })
     $('#caption').children().each(function() {
         $(this).css('font-weight','normal')
     });
-    marker.setIcon('images/orange_Marker' + marker.key +'.png');
+    marker.setIcon('images/orange_Marker' + String.fromCharCode(parseInt(marker.key)+65) +'.png');
     marker.setZIndex(maxZIndex+1);
     $('.caption'+marker.key).css('font-weight','bold');
     $('#Result').html("");
@@ -290,7 +290,7 @@ function highlight(marker) {
 };
 
 function unhighlight() {
-    $.each(global.content,function() {
+    $.each(global.markers,function() {
         this.setIcon('images/blue_Marker' + String.fromCharCode(parseInt(this.key)+65) +'.png');
     })
     $('#caption').children().css('font-weight','normal');
