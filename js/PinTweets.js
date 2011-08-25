@@ -3,44 +3,28 @@
 //ONE GLOBAL OBJECT
 var global = new Global();
 
-Array.prototype.contains = function(obj) {
-    var i = this.length;
-    while (i--) {
-        if (this[i] === obj) {
-            return true;
-        }
-    }
-    return false;
-}
-
 function Global() {
     this.horizontalMargin = 15;
     this.pinBoolean = false;
-
+	this.markerKey = 0
 
     this.nextKey = function() {
-        this.nextKeyValue++;
-        return new Number(this.nextKeyValue).toString();
+        this.markerKey++;
     }
 
-    this.addItem = function(item) {
-        this.addMarker(item.marker);
-        this.addContent(item.content);
-    }
-
-    this.addMarker = function(marker) {
-        this.markers.push(marker);
-    }
     this.addContent = function(con) {
-        this.content.push(con);
-        
+        this.content.push(con);        
     }
 
     this.resetItems = function() {
         this.content = new Array();
         this.removeMarkers();
-        this.nextKeyValue = 0;
+        this.markerKey = 0;
     }
+
+	this.getKey = function() {
+        return String.fromCharCode(parseInt(this.markerKey)+65);
+	}
 
     this.setMap = function(mapInstance){
         this.map = mapInstance;
@@ -54,25 +38,16 @@ function Global() {
         this.pinListener = listener;
     }
 
-    this.setMarkers = function(markerArray){
-        this.markers = markerArray;
-    }
-
-    this.setContent = function(contentArray) {
-        this.content = contentArray;
-    }
-
     this.setSearchURL = function(URLString) {
         this.searchURL = URLString;
     }
 
     this.removeMarkers = function() {
-        if (this.markers) {
-            for (i=0;i<this.markers.length;i++) {
-                this.markers[i].setMap(null);//removes from map
+        if (this.content) {
+            for (i=0;i<this.content.length;i++) {
+                this.content[i].marker.setMap(null);//removes from map
             }
         }
-        this.markers = new Array();
     }
 };
 
@@ -81,20 +56,20 @@ String.prototype.tweetEncode = function() {
 
     var forReturn = this;
     //var URLArrMatch = forReturn.match(/(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/g);//links
-    var encodeLink = function(str,ptrn,hrefPrefix,startingIndex) {
+    var encodeLink = function(str,ptrn,hrefPrefix,startingIndex,encodeBool) {
         var index = str.search(ptrn);
 
         if (index != -1) {
             var tagged = str.match(ptrn)[0];
-            return (str.substring(0,index) + '<a href="'+hrefPrefix+encodeURIComponent(tagged.toString().substring(startingIndex,tagged.length))+'" target="_blank">'+tagged+'</a>' + encodeLink(str.substring(index+tagged.length,str.length),ptrn,hrefPrefix,startingIndex));
+            return (str.substring(0,index) + '<a href="'+hrefPrefix+(encodeBool ? encodeURIComponent(tagged.toString().substring(startingIndex,tagged.length)) : tagged.toString().substring(startingIndex,tagged.length)) +'" target="_blank">'+tagged+'</a>' + encodeLink(str.substring(index+tagged.length,str.length),ptrn,hrefPrefix,startingIndex));
         } else {
             return str;
         }
     };
 
-    forReturn = encodeLink(forReturn,/(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/,'',0);
-    forReturn = encodeLink(forReturn,/#\w+/,'http://twitter.com/#!/search/',0);
-    forReturn = encodeLink(forReturn,/@\w+/,'http://twitter.com/#!/',1);
+    forReturn = encodeLink(forReturn,/(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/,'',0,false);
+    forReturn = encodeLink(forReturn,/#\w+/,'http://twitter.com/#!/search/',0,true);
+    forReturn = encodeLink(forReturn,/@\w+/,'http://twitter.com/#!/',1,true);
 
     return forReturn;
 };
@@ -155,8 +130,6 @@ function populateForm() { //IF ANYONE FEELS GANGSTER MAKE A FULL-ON GRAMMER http
     }
 }
 
-
-
 function populateCaption() {
     $.each(global.content,function(i) {
         $('#caption').append(
@@ -169,8 +142,8 @@ function populateCaption() {
     $('.captionLetter').click( function() {
         var new_position = $('#MapLabel').offset();
 
-        global.map.setCenter(global.markers[$(this).text().trim().charCodeAt()-65].position);
-        highlight(global.markers[$(this).text().trim().charCodeAt()-65]);
+        global.map.setCenter(global.content[$(this).text().trim().charCodeAt()-65].marker.position);
+        highlight(global.content[$(this).text().trim().charCodeAt()-65].marker);
 
         window.scrollTo(new_position.left,new_position.top);
     });
@@ -183,9 +156,19 @@ function postLoadFormat() {
     $('#Map').css('left',global.horizontalMargin + 'px');
     $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
     $('#loader').hide();
+    zoomExtents(global.content,global.map);
 };
 
-function zoomExtents(markers,map){
+function zoomExtents(content,map){
+	
+    var markers = new Array();
+    
+    for (i=0;i<content.length;i++) {
+    	if (markers.indexOf(content[i].marker) == -1) {
+    		markers.push(content[i].marker);
+    	}
+    }
+    
     if (markers.length == 1) {
         var zoomService = new google.maps.MaxZoomService();
 
@@ -193,9 +176,6 @@ function zoomExtents(markers,map){
         zoomService.getMaxZoomAtLatLng(map.getCenter(), function(MaxZoomResult){
             map.setZoom(Math.min(18,MaxZoomResult.zoom));//asynchronous callback
         });
-    } else if (global.pin) {
-        map.setCenter(global.pin.position);
-        map.setZoom(10);//should make dynamic
     } else {
         var bounds = new google.maps.LatLngBounds();
 
@@ -237,7 +217,7 @@ function TwitterDateConverter(time){//big up http://www.phpmind.com/blog/2011/02
 
 function getAPIURL(){
 
-    var APIString = 'http://search.twitter.com/search.json?callback=?&rpp=10';
+    var APIString = 'http://search.twitter.com/search.json?callback=?&rpp=5';
     var URLString = '#'
     var elem = document.getElementById('searchForm');
     var first = true;
@@ -269,19 +249,19 @@ function highlight(marker) {
 
     changeCanvas('Result');
 
-    $.each(global.markers,function() {
-        this.setIcon('images/blue_Marker' + String.fromCharCode(parseInt(this.key)+65) +'.png');
-        maxZIndex = Math.max(maxZIndex, this.ZIndex);
+    $.each(global.content,function() {
+        this.marker.setIcon('images/blue_Marker' + this.marker.key + '.png');
+        maxZIndex = Math.max(maxZIndex, this.marker.ZIndex);
     })
     $('#caption').children().each(function() {
         $(this).css('font-weight','normal')
     });
-    marker.setIcon('images/orange_Marker' + String.fromCharCode(parseInt(marker.key)+65) +'.png');
+    marker.setIcon('images/orange_Marker' + marker.key +'.png');
     marker.setZIndex(maxZIndex+1);
     $('.caption'+marker.key).css('font-weight','bold');
     $('#Result').html("");
     $.each(global.content,function() {
-        if (this.key == marker.key) {
+        if (this.marker.key == marker.key) {
             $('#Result').append(
                 '<div class="search"><div class="sidebarContentTitle"><a href="http://twitter.com/#!/'+this.user+'"  target="_blank">@'+this.user+'</a> tweeted,</div><div class="sidebarContent">'+this.text.tweetEncode()+'</div><div class="sidebarContentTime">'+TwitterDateConverter(this.time)+'</div></div>'
             );
@@ -290,8 +270,8 @@ function highlight(marker) {
 };
 
 function unhighlight() {
-    $.each(global.markers,function() {
-        this.setIcon('images/blue_Marker' + String.fromCharCode(parseInt(this.key)+65) +'.png');
+    $.each(global.content,function() {
+        this.marker.setIcon('images/blue_Marker' + String.fromCharCode(parseInt(this.key)+65) +'.png');
     })
     $('#caption').children().css('font-weight','normal');
     $('#resultText').html('<div class="sidebarContentTitle">Select a marker on the map to see the content of its Tweet.</div>');
@@ -343,223 +323,105 @@ function resetMap(map) {
     global.resetItems();
 }
 
-function addToMap(map, result) {
-
-    function findSameLoc(content) {
-        for (i = 0; i < global.content; i++) {
-                cur_content = global.content[i];
-                if (cur_content == content) {continue;}
-                if (cur_content.lat == content.lat && cur_content.lng == content.lng) {return cur_content;}
-            }
-        return false;
-
-    }
-
-    content = {
-                        'key': '',
-                        'text':result.text,
-                        'lat':result.geo_info.lat,
-                        'lng':result.geo_info.lng,
-                        'img':result.profile_image_url,
-                        'user':result.from_user,
-                        'marker': null,
-                        'time':result.created_at
-                    }
-    repeat = findSameLoc(content);
-    if (repeat) {
-        content.key = repeat.key;
-        content.marker = repeat.marker;
-        repeat.marker.title = "Multiple Tweets";
-    }
-    else {
-        content.key = global.nextKey();
-        marker = new google.maps.Marker(
-                                {
-                                    'position': new google.maps.LatLng(content.lat,content.lng),
-                                    'map': map,
-                                    'place': result.place,
-                                    'icon': 'images/blue_Marker' + String.fromCharCode(65+parseInt(content.key)) +'.png',
-                                    'title': TwitterDateConverter(result.created_at),
-                                    'key': content.key
-                                }//marker array
-                            );
-        google.maps.event.addListener(marker, 'click', function() {
-                        highlight(this);
-                    });
-        content.marker = marker;
-        global.addMarker(marker);
-    }
-    global.addContent(content);
-
-    $('#caption').append(
-            '<div class="captionDiv caption'+content.key+'"><div class="captionLetter">'+content.key+'</div><a class="captionPic" href="http://twitter.com/#!/'+content.user+'" target="_blank"><img width="48" height="48" src="'+content.img+'"/></a><div class="captionContent">'+content.text.tweetEncode()+' <em>'+TwitterDateConverter(content.time)+'</em></div></div>'
-    );
-    if (global.markers.length > 0) {zoomExtents(global.markers,map);}
-    postLoadFormat();
-
-    return '#Map';
-}
-
-
-
-function initializeMap(map,data,geocodedLatLng){
-
-    var markerIndex = 0;
-    var tweetMarkers = new Array();
-    var tweetContent = new Array();
-
-    //must be on top. API does not work if map is hidden
-    changeCanvas('Search');
-    changeCanvas('Map');
-
-    if (data.results.length==0) {
-        changeCanvas('no_results');
-        $('#loader').hide();
-        return '#no_results';
-    } else {
-        console.log(geocodedLatLng);
-        for (i=0;i<geocodedLatLng.length;i++) {
-
-            if(geocodedLatLng[i].valid){
-
-                var alreadyMarked = false;
-
-                for (j=0;j<tweetContent.length;j++) {
-                    if (tweetContent[j]['lat'] == geocodedLatLng[i].lat && tweetContent[j]['lng'] == geocodedLatLng[i].lng) {
-                        alreadyMarked = true;
-                        break;
-                    }
-                }
-
-                tweetContent.push(
-                    {
-                        'key': '',
-                        'text':data.results[i].text,
-                        'lat':geocodedLatLng[i].lat,
-                        'lng':geocodedLatLng[i].lng,
-                        'img':data.results[i].profile_image_url,
-                        'user':data.results[i].from_user,
-                        'time':data.results[i].created_at
-                    }
-                );
-
-                if (alreadyMarked) {
-
-                    tweetContent[tweetContent.length-1].key = tweetContent[j].key;
-
-                    tweetMarkers[tweetContent[j].key.charCodeAt()-65].title = 'Multiple Tweets';
-
-                } else {
-
-                    tweetContent[tweetContent.length-1].key = String.fromCharCode(markerIndex+65),
-
-                        tweetMarkers.push(
-                            new google.maps.Marker(
-                                {
-                                    'position': new google.maps.LatLng(geocodedLatLng[i].lat,geocodedLatLng[i].lng),
-                                    'map': map,
-                                    'place': data.results[i].place,
-                                    'icon': 'images/blue_Marker' + String.fromCharCode(markerIndex+65) +'.png',
-                                    'title': TwitterDateConverter(data.results[i].created_at),
-                                    'key': String.fromCharCode(markerIndex+65)
-                                }//marker array
-                            )
-                        );//marker constructor
-
-                    google.maps.event.addListener(tweetMarkers[markerIndex], 'click', function() {
-                        highlight(this);
-                    });
-
-                    markerIndex++;
-
-                }
-            }
-        }//big for
-
-        if (tweetMarkers.length == 0) {
-            changeCanvas('no_location');
-            $('#loader').hide();
-            return '#no_location';
-        }
-
-        tweetContent.sort(function(a, b){
-            return a.key[0].charCodeAt()-b.key[0].charCodeAt();
-        })
-
-    }
-
-    //call helper functions
-    global.setMarkers(tweetMarkers);
-    global.setContent(tweetContent);
-    zoomExtents(tweetMarkers,map);
-    populateCaption();
-
-    //formatting after scroll is established
-    postLoadFormat();
-
-    return '#Map';
-
-};//initialize
-
-function noResults() {
-    changeCanvas('no_results');
-        $('#loader').hide();
-        return '#no_results';
-}
-
-function geocodeTweetsJack(map,data) {
-    var geocodedData = new Object();
+function geocodeTweets(map,data) {
     var geocoder = new google.maps.Geocoder();
     var results = data.results;
     var regexp = /\-*\d+[.,]\d+/g;
-    if (results.length == 0) {
-        noResults();
-        return;
-    }
-    resetMap();
-    $.each(results, geocodeTweet);
-    function geocodeTweet(ind,result) {
-        if (result.geo) {geotagResult(result); return;}
-        if (checkForDuplicateUN(result)) {return;}
-        ajaxResult(result);
-    }
-    function geotagResult(result) {
-        result.geo_info = {
-            'valid':true,
-            'exact':true,
-            'lat':result.geo.coordinates[0],
-            'lng':result.geo.coordinates[1],
-            'waiting': false
-        };
-        addToMap(map,result);
-    }
-    function checkForDuplicateUN(result) {
-        for (i = 0; i < results.length; i++) {
-            comp_result = results[i];
-            if (result == comp_result) {return false;}
-            if (result.from_user == comp_result.from_user && !comp_result.geo_info.exact) {
-                result.geo_info = comp_result.geo_info;
-                if (!result.geo_info.waiting) {addToMap(map,result);}
-                return true;
-            }
-        }
-        return false;
-    }
+    var done;
+    
+    //LEVEL 3 ALL GET HERE
+	function addToMap(map, result) {
+	
+		function findSameLoc(content) {
+			for (i = 0; i < global.content.length; i++) {
+				var contentCur = global.content[i];
+				if (contentCur == content) {continue;}
+				if (contentCur.lat == content.lat && contentCur.lng == content.lng) {return contentCur;}
+			}
+			return false;
+		}
+	
+	    var content = {
+		    'text':result.text,
+		    'lat':result.geo_info.lat,
+		    'lng':result.geo_info.lng,
+		    'img':result.profile_image_url,
+		    'user':result.from_user,
+		    'marker': null,
+		    'time':result.created_at
+		}
+		
+	    var repeat = findSameLoc(content);
+	
+	    if (repeat) {
+			content.marker = repeat.marker;
+			repeat.marker.title = "Multiple Tweets";
+	    } else {
+	    	var currKey = global.getKey();
+	    	global.nextKey();
+	    	
+	        content.marker = new google.maps.Marker(
+		        {
+		            'position': new google.maps.LatLng(content.lat,content.lng),
+		            'map': map,
+		            'icon': 'images/blue_Marker' + currKey +'.png',
+		            'title': TwitterDateConverter(result.created_at),
+		            'key': currKey
+		        }//marker array
+			);
+	        
+	        google.maps.event.addListener(content.marker , 'click', function() {
+				highlight(this);
+			});        
+	    }
+	    
+	    global.addContent(content);
+	    
+	    $('.below').css('margin-bottom','10px');
+	    $('.wrapper').css('border-bottom',1);
+	
+	    $('#caption').append(
+			'<div class="captionDiv caption'+content.marker.key+'"><div class="captionLetter">'+content.marker.key+'</div><a class="captionPic" href="http://twitter.com/#!/'+content.user+'" target="_blank"><img width="48" height="48" src="'+content.img+'"/></a><div class="captionContent">'+content.text.tweetEncode()+' <em>'+TwitterDateConverter(content.time)+'</em></div></div>'
+	    );
+	    
+	    $('.captionLetter').click( function() {
+	        var new_position = $('#MapLabel').offset();
+	
+	        global.map.setCenter(global.content[$(this).text().trim().charCodeAt()-65].marker.position);
+	        highlight(global.content[$(this).text().trim().charCodeAt()-65].marker);
+	
+	        window.scrollTo(new_position.left,new_position.top);
+	    });
+	    
+		result.waiting = false;	    	
+	
+		done = true;
+	
+		for (i=0;i<results.length;i++) {
+			if (results[i].waiting) {done = false; break;}			
+		}
+		
+		if (done) {postLoadFormat();}
+	}
+	
+	//CALL TO THIRD LEVEL FOR THOSE DROPPED DURING USER-NAME CHECK
     function checkForWaiting(result) {
         $.each(results,function () {
-            if (!this.geo_info || this == result || !this.geo_info.waiting) {return;}
+            if (this == result || !this.waiting) {return;}
             if (this.from_user == result.from_user) {
                 this.geo_info = result.geo_info;
                 addToMap(map,this);
             }
         })
     }
+
+	//LEVEL 2
     function ajaxResult(result) {
         function onSuccess(data) {
             function gotCoords(lat,lng) {
+            	result.geo_info.valid = true;
                 result.geo_info.lat = lat;
                 result.geo_info.lng = lng;
-                result.waiting = false;
                 addToMap(map,result);
                 checkForWaiting(result);
             }
@@ -570,12 +432,17 @@ function geocodeTweetsJack(map,data) {
                     geocoder.geocode( { 'address': data[0].user.location }, function(results, status) {
                         if (status == google.maps.GeocoderStatus.OK) {
                             gotCoords(results[0].geometry.location.lat(),results[0].geometry.location.lng())
+                        } else {
+           					result.waiting = false;
                         }
                     });
                 }
+            } else {
+           		result.waiting = false;
             }
         }
-        result.geo_info = {'valid':true,'exact':false,'lat':false,'lng':false,'waiting': true};
+        result.waiting = true;
+        result.geo_info = {'valid':false,'exact':false,'lat':false,'lng':false};
         $.ajax('http://twitter.com/statuses/user_timeline.json?callback=?&count=5&id='+result.from_user, {
             crossDomain:true,
             dataType: 'jsonp',
@@ -590,129 +457,76 @@ function geocodeTweetsJack(map,data) {
             success:onSuccess
         });
     }
-
-}
-
-//SECOND-LEVEL ASYNCHRONOUS FUNCTION
-function geocodeTweets(map,data) {
-
-    var geocodedLatLng = new Array();
-    var geocoder = new google.maps.Geocoder();
-    var searched = new Object();
-    searched.name = new Array();
-    searched.latLng = new Array();
-
-    var geocode = function(n) { //recursive
-        if (n>0) {
-
-            var userName = data.results[n-1].from_user;
-            var regexp = /\-*\d+[.,]\d+/g;
-
-            if (data.results[n-1].geo) {
-                geocodedLatLng.unshift(
-                    {
-                        'valid':true,
-                        'exact':true,
-                        'lat':data.results[n-1].geo.coordinates[0],
-                        'lng':data.results[n-1].geo.coordinates[1]
-                    }
-                );
-                geocode(n-1);//needs to be repeated because asynchronous
-            } else if (searched.name.contains(userName)) {
-                geocodedLatLng.unshift(searched.latLng[searched.name.indexOf(userName)]);
-                geocode(n-1);//needs to be repeated because asynchronous
-            } else {
-                $.ajax('http://twitter.com/statuses/user_timeline.json?callback=?&count=5&id='+data.results[n-1].from_user, {
-                    crossDomain:true,
-                    dataType: 'jsonp',
-                    timeout:5000,
-                    error: function() {
-                        changeCanvas('breached');
-                        $('#MapLabel').click(function() {
-                            changeCanvas('breached');
-                        });
-                        postLoadFormat();
-                    },
-                    success:function(data) {
-                        searched.name.unshift(userName);//to avoid searching multiple times for the same user
-                        if  (data.length>0) {
-                            console.log(data[0].user.location);
-                            if ((data[0].user.location == null) ? false :(data[0].user.location.search(regexp) == -1) ? false : (data[0].user.location.match(regexp).length != 2) ? false : (data[0].user.location.match(regexp)[0] >= -90 && data[0].user.location.match(regexp)[0] <=90 && data[0].user.location.match(regexp)[1] >= -180 && data[0].user.location.match(regexp)[1] <= 180)) {//for ubertwitter
-                                geocodedLatLng.unshift(
-                                    {
-                                        'valid':true,
-                                        'exact':false,
-                                        'lat':(data[0].user.location.match(regexp)[0]),
-                                        'lng':(data[0].user.location.match(regexp)[1])
-                                    }
-                                );
-                                searched.latLng.unshift(geocodedLatLng[0]);//needs to be repeated because asynchronous
-                                geocode(n-1);//needs to be repeated because asynchronous
-                            } else {
-                                geocoder.geocode( { 'address': data[0].user.location }, function(results, status) {
-                                    if (status == google.maps.GeocoderStatus.OK) {
-                                        geocodedLatLng.unshift(
-                                            {
-                                                'valid':true,
-                                                'exact':false,
-                                                'lat':results[0].geometry.location.lat(),
-                                                'lng':results[0].geometry.location.lng()
-                                            }
-                                        );
-                                        searched.latLng.unshift(geocodedLatLng[0]);//needs to be repeated because asynchronous
-                                        geocode(n-1);//needs to be repeated because asynchronous
-                                    } else {
-                                        geocodedLatLng.unshift(
-                                            {
-                                                'valid':false
-                                            }
-                                        );
-                                        searched.latLng.unshift(geocodedLatLng[0]);//needs to be repeated because asynchronous
-                                        geocode(n-1);//needs to be repeated because asynchronous
-                                    }
-                                });
-                            }
-                        } else {
-                            geocodedLatLng.unshift(
-                                {
-                                    'valid':false
-                                }
-                            );
-                            searched.latLng.unshift(geocodedLatLng[0]);//needs to be repeated because asynchronous
-                            geocode(n-1);//needs to be repeated because asynchronous
-                        }
-                    }
-                });
+    
+	function checkForDuplicateUN(result) {
+        for (i = 0; i < results.length; i++) {
+            comp_result = results[i];
+            if (result == comp_result) {return false;}
+            if (result.from_user == comp_result.from_user && !comp_result.geo_info.exact) {
+                result.geo_info = comp_result.geo_info;
+                if (!result.waiting) {addToMap(map,result);}
+                return true;
             }
-        } else {
-            $('#MapLabel').click(function() {
-                changeCanvas('Map');
-            });
-            initializeMap(map,data,geocodedLatLng);
         }
-    };
-
-    if (data.results) {
-        geocode(data.results.length);
-    } else {
-        changeCanvas('no_results');
-        $('#loader').hide();
+        return false;
     }
+
+    function geotagResult(result) {
+    	result.waiting = false;
+        result.geo_info = {
+            'valid':true,
+            'exact':true,
+            'lat':result.geo.coordinates[0],
+            'lng':result.geo.coordinates[1],
+        };
+        addToMap(map,result);
+    }
+
+	//LEVEL 1
+    function geocodeTweet(ind,result) {
+        if (result.geo) {geotagResult(result); return;}
+        if (checkForDuplicateUN(result)) {return;}
+        ajaxResult(result);
+    }
+
+	function noResults() {
+	    changeCanvas('no_results');
+	    $('#loader').hide();
+	}
+	
+	if (!results || results.length == 0) {
+        return noResults();
+	} else {
+		for (i=0;i<results.length;i++) {
+			results[i].waiting = true;
+	        results[i].geo_info = {'valid':false,'exact':false,'lat':false,'lng':false};
+		}
+	} 
+    
+    resetMap();
+    $.each(results, geocodeTweet);
+	
 }
 
-//FIRST-LEVEL ASYNCHRONOUS FUNCTION
+//LEVEL 0
 function loadMap(map){
     var searchURL = getAPIURL();
 
-    $('#loader').show();
+    //must be on top. API does not work if map is hidden
+	changeCanvas('Search');
+	changeCanvas('Map');
+	
+	$('#loader').show();
     $('#Result').html='<div class="sidebarContentTitle">Select a marker on the map to see the content of its Tweet.</div>'
-    $('#caption').html("");
+    $('.below').css('margin-bottom','0');
+    $('.wrapper').css('border-bottom',2);
+    $('#caption').html('');
 
     $.ajax(searchURL, {
         crossDomain:true,
         dataType: "jsonp",
         success:function(data){
-            geocodeTweetsJack(map,data);
+            geocodeTweets(map,data);
         }
     });
 
@@ -721,7 +535,6 @@ function loadMap(map){
 //ON LOAD
 $(document).ready(function(){
 
-    //FOR GCF BRENDAN,CAN YOU HAVE A LOOK?
     CFInstall.check({
         mode: 'overlay',
         destination: "http://www.waikiki.com"
@@ -758,15 +571,10 @@ $(document).ready(function(){
         }
     });
 
-    //declare map
-    var myOptions = {
-        zoom: 8,//dummy
-        center: google.maps.LatLng(0,0),//dummy
-        mapTypeId: google.maps.MapTypeId.SATELLITE
-    };
-
-    var map = new google.maps.Map(document.getElementById('Map'),myOptions);
-    global.setMap(map);
+    $(window).resize(function() {
+        $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
+        $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
+    });
 
     //jQuery format
     $($('.topnav').children()).each(function () {
@@ -780,18 +588,24 @@ $(document).ready(function(){
         $(this).width($('#sidebar').width()/2);
     });
 
-    $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true));
-    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true));
+	$('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
+    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
 
-    $(window).resize(function() {
-        $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
-        $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
-    });
+    //declare map
+    var myOptions = {
+        zoom: 8,//dummy
+        center: google.maps.LatLng(0,0),//dummy
+        mapTypeId: google.maps.MapTypeId.SATELLITE
+    };
+
+    var map = new google.maps.Map(document.getElementById('Map'),myOptions);
+    global.setMap(map);
 
     //start her up
     populateForm();
     loadMap(map);
 });
+
 //IE REDIRECT
 if (navigator.appName=='Microsoft Internet Explorer' && window.location=='index.html') {
     window.location='PinTweets_ie.html'; //URL to redirect to
