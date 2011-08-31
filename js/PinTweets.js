@@ -153,10 +153,7 @@ function postLoadFormat() {
     $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
     $('.canvasText').css('padding-left',global.horizontalMargin+'px');
     $('.canvasText').css('padding-right',global.horizontalMargin+'px');
-    $('#Map').css('left',global.horizontalMargin + 'px');
-    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
     $('#loader').hide();
-    zoomExtents(global.content,global.map);
 };
 
 function zoomExtents(content,map){
@@ -327,8 +324,34 @@ function geocodeTweets(map,data) {
     var geocoder = new google.maps.Geocoder();
     var results = data.results;
     var regexp = /\-*\d+[.,]\d+/g;
-    var done;
     
+	//BASTA
+	function checkForDone() {
+		var done = true;
+		var hasResults = false;
+		
+		for (i=0;i<results.length;i++) {
+			if (results[i].waiting) {done = false; break;}
+			if (results[i].geo_info) {hasResults = true;}
+		}
+		
+		if (hasResults && done){
+			$('#MapLabel').click(function() {
+	            changeCanvas('Map');
+            });
+		    $('#Map').css('left',global.horizontalMargin + 'px');
+		    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
+		    zoomExtents(global.content,global.map);
+			postLoadFormat();
+		} else if (!hasResults && done){
+			changeCanvas('no_location');
+			$('#MapLabel').click(function() {
+	            changeCanvas('no_location');
+            });
+			postLoadFormat();
+		}
+	}
+
     //LEVEL 3 ALL GET HERE
 	function addToMap(map, result) {
 	
@@ -394,14 +417,8 @@ function geocodeTweets(map,data) {
 	    });
 	    
 		result.waiting = false;	    	
-	
-		done = true;
-	
-		for (i=0;i<results.length;i++) {
-			if (results[i].waiting) {done = false; break;}			
-		}
+		checkForDone();
 		
-		if (done) {postLoadFormat();}
 	}
 	
 	//CALL TO THIRD LEVEL FOR THOSE DROPPED DURING USER-NAME CHECK
@@ -425,6 +442,7 @@ function geocodeTweets(map,data) {
                 addToMap(map,result);
                 checkForWaiting(result);
             }
+            console.log('onSuccuess: '+data);
             if  (data.length>0) {
                 if ((data[0].user.location == null) ? false :(data[0].user.location.search(regexp) == -1) ? false : (data[0].user.location.match(regexp).length != 2) ? false : (data[0].user.location.match(regexp)[0] >= -90 && data[0].user.location.match(regexp)[0] <=90 && data[0].user.location.match(regexp)[1] >= -180 && data[0].user.location.match(regexp)[1] <= 180)) {
                     gotCoords(data[0].user.location.match(regexp)[0],data[0].user.location.match(regexp)[1]);
@@ -434,13 +452,16 @@ function geocodeTweets(map,data) {
                             gotCoords(results[0].geometry.location.lat(),results[0].geometry.location.lng())
                         } else {
            					result.waiting = false;
+							checkForDone();
                         }
                     });
                 }
             } else {
            		result.waiting = false;
+				checkForDone();
             }
         }
+        
         result.waiting = true;
         result.geo_info = {'valid':false,'exact':false,'lat':false,'lng':false};
         $.ajax('http://twitter.com/statuses/user_timeline.json?callback=?&count=5&id='+result.from_user, {
@@ -472,7 +493,6 @@ function geocodeTweets(map,data) {
     }
 
     function geotagResult(result) {
-    	result.waiting = false;
         result.geo_info = {
             'valid':true,
             'exact':true,
@@ -491,7 +511,10 @@ function geocodeTweets(map,data) {
 
 	function noResults() {
 	    changeCanvas('no_results');
-	    $('#loader').hide();
+		$('#MapLabel').click(function() {
+            changeCanvas('no_results');
+        });	    
+	    postLoadFormat();
 	}
 	
 	if (!results || results.length == 0) {
@@ -550,10 +573,6 @@ $(document).ready(function(){
     });
 
     $('.date').datepicker({ dateFormat: 'yy-mm-dd' });//initializes date inputs
-
-    $('#SearchLabel').click(function() {
-        unhighlight();
-    });
 
     $('#pinButton').click(function() {
         global.pinBoolean = !global.pinBoolean
