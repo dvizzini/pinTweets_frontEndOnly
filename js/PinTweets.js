@@ -214,7 +214,7 @@ function TwitterDateConverter(time){//big up http://www.phpmind.com/blog/2011/02
 
 function getAPIURL(){
 
-    var APIString = 'http://search.twitter.com/search.json?callback=?&rpp=5';
+    var APIString = 'http://search.twitter.com/search.json?callback=?&rpp=10';
     var URLString = '#'
     var elem = document.getElementById('searchForm');
     var first = true;
