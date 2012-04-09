@@ -421,27 +421,44 @@ function geocodeTweets(map,data) {
 		
 	}
 	
-	//CALL TO THIRD LEVEL FOR THOSE DROPPED DURING USER-NAME CHECK
-    function checkForWaiting(result) {
-        $.each(results,function () {
-            if (this == result || !this.waiting) {return;}
-            if (this.from_user == result.from_user) {
-                this.geo_info = result.geo_info;
-                addToMap(map,this);
-            }
-        })
-    }
-
 	//LEVEL 2
     function ajaxResult(result) {
+
         function onSuccess(data) {
+
             function gotCoords(lat,lng) {
             	result.geo_info.valid = true;
                 result.geo_info.lat = lat;
                 result.geo_info.lng = lng;
                 addToMap(map,result);
-                checkForWaiting(result);
+
+				//CALL TO THIRD LEVEL FOR THOSE DROPPED DURING USER-NAME CHECK
+		        $.each(results,function () {
+		            if (this == result || !this.waiting) {return;}
+		            if (this.from_user == result.from_user) {
+		                this.geo_info = result.geo_info;
+		                addToMap(map,this);
+		            }
+		        })
+
             }
+
+            function didNotGetCoords() {
+
+				result.waiting = false;
+
+				//CALL TO THIRD LEVEL FOR THOSE DROPPED DURING USER-NAME CHECK
+		        $.each(results,function () {
+		            if (this == result || !this.waiting) {return;}
+		            if (this.from_user == result.from_user) {
+						this.waiting = false;
+		            }
+		        })
+
+				checkForDone();
+
+            }
+
             console.log('onSuccuess: '+data);
             if  (data.length>0) {
                 if ((data[0].user.location == null) ? false :(data[0].user.location.search(regexp) == -1) ? false : (data[0].user.location.match(regexp).length != 2) ? false : (data[0].user.location.match(regexp)[0] >= -90 && data[0].user.location.match(regexp)[0] <=90 && data[0].user.location.match(regexp)[1] >= -180 && data[0].user.location.match(regexp)[1] <= 180)) {
@@ -451,14 +468,12 @@ function geocodeTweets(map,data) {
                         if (status == google.maps.GeocoderStatus.OK) {
                             gotCoords(results[0].geometry.location.lat(),results[0].geometry.location.lng())
                         } else {
-           					result.waiting = false;
-							checkForDone();
+                        	didNotGetCoords();
                         }
                     });
                 }
             } else {
-           		result.waiting = false;
-				checkForDone();
+            	didNotGetCoords();
             }
         }
         
@@ -485,7 +500,6 @@ function geocodeTweets(map,data) {
             if (result == comp_result) {return false;}
             if (result.from_user == comp_result.from_user && !comp_result.geo_info.exact) {
                 result.geo_info = comp_result.geo_info;
-                if (!result.waiting) {addToMap(map,result);}
                 return true;
             }
         }
