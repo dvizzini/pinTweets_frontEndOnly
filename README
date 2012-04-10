@@ -1,1 +1,8 @@
 I intend to both improve pintweets.com and fork this into a million and one cool geographic websites. If you would like to do either, feel free to fork this and contact me.
+
+Ad-hoc location fixes:
+-Get rid of "Earth" (maps to Earth, Texas)
+-Make "Jersey" "New Jersey" (maps to isle of tax-evasion in English Channel)
+
+Other wishlist:
+-Add fromCenter zoom function that is will not expand map beyond a certain distance from a specified point
