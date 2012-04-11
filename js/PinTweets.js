@@ -51,7 +51,7 @@ function Global() {
     }
 };
 
-//CLASS EXTENTION
+//PROTOTYPE EXTENTIONS
 String.prototype.tweetEncode = function() {
 
     var forReturn = this;
@@ -73,6 +73,13 @@ String.prototype.tweetEncode = function() {
 
     return forReturn;
 };
+
+/** Converts numeric degrees to radians */
+if (typeof(Number.prototype.toRad) === "undefined") {
+  Number.prototype.toRad = function() {
+    return this * Math.PI / 180;
+  }
+}
 
 //SYNCHRONOUS FUNCTIONS
 function populateForm() { //IF ANYONE FEELS GANGSTER MAKE A FULL-ON GRAMMER http://ajaxian.com/archives/jison-build-parsers-in-javascript
@@ -156,7 +163,7 @@ function postLoadFormat() {
     $('#loader').hide();
 };
 
-function zoomExtents(content,map){
+function zoom(content,map,expansionFunction){
 	
     var markers = new Array();
     
@@ -167,21 +174,76 @@ function zoomExtents(content,map){
     }
     
     if (markers.length == 1) {
+    	
         var zoomService = new google.maps.MaxZoomService();
 
         map.setCenter(markers[0].position);
         zoomService.getMaxZoomAtLatLng(map.getCenter(), function(MaxZoomResult){
             map.setZoom(Math.min(18,MaxZoomResult.zoom));//asynchronous callback
         });
+        
     } else {
-        var bounds = new google.maps.LatLngBounds();
-
-        for(i=0;i<markers.length;i++){
-            bounds.extend(markers[i].position);
-        }
+        
+        var bounds = expansionFunction(markers,bounds);
         map.fitBounds(bounds);
+        
     }
 };
+
+function zoomExtents(markers) {
+
+    var bounds = new google.maps.LatLngBounds();
+
+    for(i=0;i<markers.length;i++){
+		bounds.extend(markers[i].position);
+    }
+    
+    return bounds;
+
+}
+
+function zoomFromPin(markers) {
+
+    function haversine(latLngFirst, latLngSecond) {
+    	
+    	var lat1 = latLngFirst.lat()    	
+    	var lon1 = latLngFirst.lng()    	
+    	var lat2 = latLngSecond.lat()    	
+    	var lon2 = latLngSecond.lng()    	
+
+    	var R = 3958.7558657440545; // miles
+		var dLat = (lat2-lat1).toRad();
+		var dLon = (lon2-lon1).toRad();
+		var lat1 = lat1.toRad();
+		var lat2 = lat2.toRad();
+		
+		var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+		        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+		var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+		
+		return R * c;
+		
+    }
+
+    var bounds = new google.maps.LatLngBounds();
+	var makeToastBool = false;
+    
+    for(i=0;i<markers.length;i++){
+    	//Multiplier of 1.5, 2, 3?
+    	if (haversine(global.pin.getPosition(), markers[i].position) < $('#radius').val() * 3 ){
+			bounds.extend(markers[i].position);    		
+    	} else {
+    		makeToastBool = true;
+    	}
+    }
+    
+    if (makeToastBool) {
+    	//make some toast
+    }
+    
+    return bounds;
+    
+}
 
 function changeCanvas(canvasID){
     $('.'+$('#'+canvasID).attr('class').match(/\w+/)).hide();
@@ -341,7 +403,13 @@ function geocodeTweets(map,data) {
             });
 		    $('#Map').css('left',global.horizontalMargin + 'px');
 		    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
-		    zoomExtents(global.content,global.map);
+		    
+		    if (global.pinBoolean) {
+		    	zoom(global.content,global.map,zoomFromPin);
+		    } else {
+			    zoom(global.content,global.map,zoomExtents);		    	
+		    }
+		    
 			postLoadFormat();
 		} else if (!hasResults && done){
 			changeCanvas('no_location');
@@ -482,7 +550,7 @@ function geocodeTweets(map,data) {
         $.ajax('http://twitter.com/statuses/user_timeline.json?callback=?&count=5&id='+result.from_user, {
             crossDomain:true,
             dataType: 'jsonp',
-            timeout:5000,
+            timeout:8000,
             error: function() {
                 changeCanvas('breached');
                 $('#MapLabel').click(function() {

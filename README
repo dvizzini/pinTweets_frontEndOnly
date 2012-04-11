@@ -5,4 +5,5 @@ Ad-hoc location fixes:
 -Make "Jersey" "New Jersey" (maps to isle of tax-evasion in English Channel)
 
 Other wishlist:
--Add fromCenter zoom function that is will not expand map beyond a certain distance from a specified point
+-Handle limit breach better. Actually read JSON's instead of relying on timeout.
+-Tell Twitter to get user field into SEARCH API results so that limit is a non-issue.
