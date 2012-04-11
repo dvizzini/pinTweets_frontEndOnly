@@ -271,7 +271,7 @@ function zoomFromPin(markers) {
     } else if (oneOutOfBounds) {
 
         $().toastmessage('showToast', {
-             text     : 'Zooming to show only results within radius distance specified. Zoom out to see worldwide results.',
+             text     : 'Zooming to show only results within distance specified. Zoom out to see worldwide results.',
 			 stayTime : 4500,  
              sticky   : false,
              position : 'middle-center',
@@ -632,11 +632,18 @@ function geocodeTweets(map,data) {
     }
 
 	function noResults() {
+		
 	    changeCanvas('no_results');
 		$('#MapLabel').click(function() {
             changeCanvas('no_results');
         });	    
+        
 	    postLoadFormat();
+
+	    if (global.pin) {
+		    removePin();
+	    }
+	    
 	}
 	
 	if (!results || results.length == 0) {
