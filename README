@@ -7,3 +7,4 @@ Ad-hoc location fixes:
 Other wishlist:
 -Handle limit breach better. Actually read JSON's instead of relying on timeout.
 -Tell Twitter to get user field into SEARCH API results so that limit is a non-issue.
+-Get hand icon to work better when dragging pin.

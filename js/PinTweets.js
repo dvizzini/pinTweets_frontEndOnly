@@ -177,10 +177,20 @@ function zoom(content,map,expansionFunction){
     	
         var zoomService = new google.maps.MaxZoomService();
 
-        map.setCenter(markers[0].position);
-        zoomService.getMaxZoomAtLatLng(map.getCenter(), function(MaxZoomResult){
-            map.setZoom(Math.min(18,MaxZoomResult.zoom));//asynchronous callback
-        });
+        if (global.pin) {//make sure pin is shwown
+        	
+		    var bounds = new google.maps.LatLngBounds();		
+			bounds.extend(markers[0].position);
+	    	bounds.extend(global.pin.getPosition());			
+        	
+        } else {//set maximum zoom
+        	
+   	        map.setCenter(markers[0].position);
+	        zoomService.getMaxZoomAtLatLng(map.getCenter(), function(MaxZoomResult){
+            	map.setZoom(Math.min(18,MaxZoomResult.zoom));//asynchronous callback
+        	});
+        
+        }
         
     } else {
         
@@ -228,7 +238,7 @@ function zoomFromPin(markers) {
 		
 		return R * c;
 		
-    }
+    }    
 
     var bounds = new google.maps.LatLngBounds();
     
@@ -247,12 +257,27 @@ function zoomFromPin(markers) {
     
     if (allOutOfBounds) {
     	
-    	//make some toast
-    	markers.pysg
+        $().toastmessage('showToast', {
+             text     : 'Cannot find results within the distance specified. Zooming to show Tweets worldwide.',
+			 stayTime : 6000,  
+             sticky   : false,
+             position : 'middle-center',
+             type     : 'notice',
+        });
+        
+        //zoom extents if none within radius
     	return zoomExtents(markers);
     	
     } else if (oneOutOfBounds) {
-    	//make some other toast
+
+        $().toastmessage('showToast', {
+             text     : 'Zooming to show onlyresults within radius distance specified. Zoom out to see worldwide results.',
+			 stayTime : 6000,  
+             sticky   : false,
+             position : 'middle-center',
+             type     : 'notice',
+        });
+
     }
     
     return bounds;
@@ -364,9 +389,10 @@ function dropPin() {
                             'position': selectedLatLng,
                             'map': global.map,
                             'icon': 'images/location-marker-th.png',
-                            'draggable': true
+                            'draggable': true,
                         }
                     )
+                    
                 );
                 global.map.setOptions({ draggableCursor: null });
             }
