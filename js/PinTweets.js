@@ -257,7 +257,7 @@ function zoomFromPin(markers) {
     
     if (allOutOfBounds) {
     	
-        $('#Map').toastmessage('showToast', {
+        $().toastmessage('showToast', {
              text     : 'Cannot find results within the distance specified. Zooming to show Tweets worldwide.',
 			 stayTime : 4500,  
              sticky   : false,
@@ -270,7 +270,7 @@ function zoomFromPin(markers) {
     	
     } else if (oneOutOfBounds) {
 
-        $('#Map').toastmessage('showToast', {
+        $().toastmessage('showToast', {
              text     : 'Zooming to show only results within radius distance specified. Zoom out to see worldwide results.',
 			 stayTime : 4500,  
              sticky   : false,
