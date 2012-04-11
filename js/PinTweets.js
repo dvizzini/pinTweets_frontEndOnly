@@ -271,7 +271,7 @@ function zoomFromPin(markers) {
     } else if (oneOutOfBounds) {
 
         $('#Map').toastmessage('showToast', {
-             text     : 'Zooming to show onlyresults within radius distance specified. Zoom out to see worldwide results.',
+             text     : 'Zooming to show only results within radius distance specified. Zoom out to see worldwide results.',
 			 stayTime : 4500,  
              sticky   : false,
              position : 'middle-center',
