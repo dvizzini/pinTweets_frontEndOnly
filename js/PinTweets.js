@@ -185,6 +185,11 @@ function zoom(content,map,expansionFunction){
     } else {
         
         var bounds = expansionFunction(markers,bounds);
+        
+		if (global.pin) {
+	    	bounds.extend(global.pin.getPosition());
+	    }
+        
         map.fitBounds(bounds);
         
     }
@@ -197,7 +202,7 @@ function zoomExtents(markers) {
     for(i=0;i<markers.length;i++){
 		bounds.extend(markers[i].position);
     }
-    
+        
     return bounds;
 
 }
@@ -226,19 +231,28 @@ function zoomFromPin(markers) {
     }
 
     var bounds = new google.maps.LatLngBounds();
-	var makeToastBool = false;
+    
+	var allOutOfBounds = true;
+	var oneOutOfBounds = false;
     
     for(i=0;i<markers.length;i++){
     	//Multiplier of 1.5, 2, 3?
     	if (haversine(global.pin.getPosition(), markers[i].position) < $('#radius').val() * 3 ){
-			bounds.extend(markers[i].position);    		
+			bounds.extend(markers[i].position);
+			allOutOfBounds = false;
     	} else {
-    		makeToastBool = true;
+    		oneOutOfBounds = true;
     	}
     }
     
-    if (makeToastBool) {
+    if (allOutOfBounds) {
+    	
     	//make some toast
+    	markers.pysg
+    	return zoomExtents(markers);
+    	
+    } else if (oneOutOfBounds) {
+    	//make some other toast
     }
     
     return bounds;
@@ -404,7 +418,7 @@ function geocodeTweets(map,data) {
 		    $('#Map').css('left',global.horizontalMargin + 'px');
 		    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
 		    
-		    if (global.pinBoolean) {
+		    if (global.pin) {
 		    	zoom(global.content,global.map,zoomFromPin);
 		    } else {
 			    zoom(global.content,global.map,zoomExtents);		    	
