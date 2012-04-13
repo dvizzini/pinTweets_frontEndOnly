@@ -1,10 +1,21 @@
-I intend to both improve pintweets.com and fork this into a million and one cool geographic websites. If you would like to do either, feel free to fork this and contact me.
+This website maps Tweets found using Twitter's search API, principally by geocoding the names listed in Twitter user profiles. It's results are flawed but fun.
 
-Ad-hoc location fixes:
+Wishlist:
+-HTML5 this up for a phone
+-Add node backend
+-Handle limit breach better. Actually read JSON's instead of relying on timeout.
+-Get hand icon to work better when dragging pin.
+
+Ad-hoc location fixes to be implemented:
 -Get rid of "Earth" (maps to Earth, Texas)
 -Make "Jersey" "New Jersey" (maps to isle of tax-evasion in English Channel)
 
-Other wishlist:
--Handle limit breach better. Actually read JSON's instead of relying on timeout.
--Tell Twitter to get user field into SEARCH API results so that limit is a non-issue.
--Get hand icon to work better when dragging pin.
+(The MIT License)
+
+Copyright (c) 2012 Daniel Vizzini
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
