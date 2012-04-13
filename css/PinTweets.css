@@ -227,6 +227,11 @@ ul.topnav li div:hover{
 	margin:10px auto;
 }
 
+#header sup {
+	font-size: 40%;
+}
+
+
 #sidebar{
 	width: 218px;
 	height: 620px;
