@@ -6,12 +6,10 @@ var global = new Global();
 //ON LOAD
 $(document).ready(function(){
 
-	/*
     CFInstall.check({
         mode: 'overlay',
         destination: "http://www.waikiki.com"
     });
-	*/
 
     //shot ajax loader
     $('#loader').show();
