@@ -6,10 +6,12 @@ var global = new Global();
 //ON LOAD
 $(document).ready(function(){
 
+	/*
     CFInstall.check({
         mode: 'overlay',
         destination: "http://www.waikiki.com"
     });
+	*/
 
     //shot ajax loader
     $('#loader').show();
@@ -405,6 +407,15 @@ function loadMap(map){
         dataType: "jsonp",
         success:function(data){
             geocodeTweets(map,data);
+        },
+        timeout:10000,
+        error: function() {
+			console.log('In error');
+            changeCanvas('Timeout');
+            $('#MapLabel').click(function() {
+                changeCanvas('Timeout');
+            });
+            postLoadFormat();
         }
     });
 	
@@ -413,8 +424,7 @@ function loadMap(map){
 	 */
 	function getAPIURL(){
 		
-		//set rpp parameter to 26 so in unlikely even that everything is geocoded there are enough letters.
-	    var APIString = 'http://search.twitter.com/search.json?callback=?&rpp=26';
+	    var APIString = 'http://search.twitter.com/search.json?callback=?&rpp=100';
 	    var URLString = '#'
 	    var elem = document.getElementById('searchForm');
 	    var first = true;
@@ -445,7 +455,8 @@ function loadMap(map){
 	 */
 	function geocodeTweets(map,data) {
 		
-	    var results = data.results;
+		//only take 26 because there are 26 letters in the alphabet. Seems as reasonable a limit as any.
+	    var results = data.results.splice(26,100);
 		var userNames = '';
 	
 		if (!results || results.length == 0) {
