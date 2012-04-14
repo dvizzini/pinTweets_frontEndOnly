@@ -280,6 +280,10 @@ ul.topnav li div:hover{
 	padding: 0 0 0 15px;
 }
 
+#EditorsPicksLabel{
+	width:98px;
+}
+
 #ContactLabel{
 	width:52px;
 }

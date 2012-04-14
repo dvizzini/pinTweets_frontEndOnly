@@ -47,7 +47,10 @@
 		<ul class="topnav above">  
 			<li id="MapLabel">
 				<div title="Show map">Map</div>  
-			</li>  
+			</li> 
+			<li id="EditorsPicksLabel">
+				<div title="Show editor's picks">Editor's Picks</div>  
+			</li>
 			<li id="AboutLabel">
 				<div title="Show website information">About</div>
 			</li>
@@ -60,19 +63,12 @@
 		<div class="canvas" id="Map">
 			Loading Tweets...
 		</div>
-		<div class="canvas canvasText" id="no_results">
-			<h2>No Tweets found.</h2>
-			<h2>Please modify your search or try again later.</h2>
-		</div>
-		<div class="canvas canvasText" id="no_location">
-			<h2>Tweets found, but none are geocoded.</h2>
-			<h2>Please modify your search or try again later.</h2>
-		</div>
-		<div class="canvas canvasText" id="breached">
-			<h2>You have currenlty exceeded Twitter's hourly serach limit.</h2>
-		</div>
-		<div class="canvas canvasText" id="Timeout">
-			<h2>The search has timed out. This may be an issue with your Internet connection, or you may have breached Twitter's hourly search limit. Please try again later.</h2>
+		<div class="canvas canvasText" id="EditorsPicks">
+			<h3>Below are some my of favorite searches. <a href= "mailto:dvizzini@pintweets.com" target="_blank">Contact me</a> to suggest others."</h3>
+			<p><a href="http://www.pintweets.com/">#nowplaying</a></p>
+			<p><a href="http://www.pintweets.com/#tweetContent=%23godblessamerica">#godblessamerica</a></p>
+			<p><a href="http://www.pintweets.com/#tweetContent=%22Abraham%20Lincoln%22&geocode=-7.003327635865509,107.89065420527345,100mi">Abraham Lincoln in Indonesia</a></p>
+			<p><a href="http://www.pintweets.com/#tweetContent=%22Jenny%20from%20the%20block%22&geocode=35.719373368765346,137.93100646250014,500mi">Jenny from the Block in Japan</a></p>
 		</div>
 		<div class="canvas canvasText" id="About">
 			<h3>"Facebook feels like a mall. Twitter feels like the street."</br>    -William Gibson</h3>
@@ -98,7 +94,7 @@
 			<p>Feel free to contact me, Daniel Vizzini, at <b><a href= "mailto:dvizzini@pintweets.com" target="_blank">dvizzini@pintweets.com</a></b>. Follow me at <a href="http://twitter.com/#!/vizzmaster" target="_blank">@vizzmaster</a>.</p>
 			<p>I would love to know about bugs or to hear your suggestions.</p>
 			<h3>Have a great search?</h3>
-			<p>Please contact me. I might make it the default.</p>
+			<p>Please contact me. I might add it to the Editor's Picks.</p>
 			<h3>Want to contribute to the code?</h3>
 			<p>Please contact me. I would love to add some HTML5 and a backend, likely in node.js. You are most welcome to do this or whatever else your heart desires.</p>
 			<h3>Can you just show me the GitHub?</h3>

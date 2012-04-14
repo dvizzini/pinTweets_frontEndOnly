@@ -16,7 +16,9 @@ $(document).ready(function(){
 
     //initialize jQuery event handlers
     $('#refreshMap').click(function() {
-        if (global) { global.removeMarkers() };
+        if (global) { 
+        	global.removeMarkers();
+        }
         loadMap(global.map);
     });
 
@@ -45,7 +47,7 @@ $(document).ready(function(){
 
     //jQuery format
     $($('.topnav').children()).each(function () {
-        var text = $(this).text().trim();
+        var text = $(this).text().replace(/\s/g,'').replace(/'/g,'');
         $('#'+text+'Label').click(function() {
             changeCanvas(text);
         });
@@ -60,8 +62,8 @@ $(document).ready(function(){
 
     //declare map
     var myOptions = {
-        zoom: 8,//dummy
-        center: google.maps.LatLng(0,0),//dummy
+        zoom: 15,
+        center: google.maps.LatLng(13.4125, 103.8667),//angkor wat
         mapTypeId: google.maps.MapTypeId.SATELLITE
     };
 
@@ -87,8 +89,16 @@ function Global() {
 	this.markerKey = 0
 
     this.nextKey = function() {
-        this.markerKey++;
+        return this.markerKey++;
     }
+
+	this.getKey = function() {
+        return this.markerKey;
+	}
+
+	this.getKeyAsChar = function() {
+        return String.fromCharCode(parseInt(this.markerKey)+65);
+	}
 
     this.addContent = function(con) {
         this.content.push(con);        
@@ -99,10 +109,6 @@ function Global() {
         this.removeMarkers();
         this.markerKey = 0;
     }
-
-	this.getKey = function() {
-        return String.fromCharCode(parseInt(this.markerKey)+65);
-	}
 
     this.setMap = function(mapInstance){
         this.map = mapInstance;
@@ -376,8 +382,11 @@ function removePin() {
         google.maps.event.removeListener(global.pinListener);
     }
 
+	global.pinBoolean = false;
     global.map.setOptions({ draggableCursor: null })
     $('#pinButton').css('background-color','#FFC400');
+    
+    
 };
 
 
@@ -408,12 +417,16 @@ function loadMap(map){
         },
         timeout:10000,
         error: function() {
-			console.log('In error');
-            changeCanvas('Timeout');
-            $('#MapLabel').click(function() {
-                changeCanvas('Timeout');
-            });
-            postLoadFormat();
+        	
+	        $().toastmessage('showToast', {
+	             text     : "The search has timed out. This may be an issue with your Internet connection, you may have breached Twitter's hourly search limit, or Twitter's API may be down. Please try again later. If problems persist, you may want to clear the data in your browser.",
+				 type     : 'error',
+	             sticky   : true,
+	             position : 'middle-center'
+	        });
+	        
+			$('#loader').hide();	
+
         }
     });
 	
@@ -453,8 +466,7 @@ function loadMap(map){
 	 */
 	function geocodeTweets(map,data) {
 		
-		//only take 26 because there are 26 letters in the alphabet. Seems as reasonable a limit as any.
-	    var results = data.results.splice(26,100);
+	    var results = data.results;
 		var userNames = '';
 	
 		if (!results || results.length == 0) {
@@ -533,14 +545,18 @@ function loadMap(map){
 	            dataType: 'jsonp',
 	            timeout:10000,
 	            //TODO: Handle 400's better
-	            error: function() {
-					console.log('In error');
-	                changeCanvas('Timeout');
-	                $('#MapLabel').click(function() {
-	                    changeCanvas('Timeout');
-	                });
-	                postLoadFormat();
-	            },
+		        error: function() {
+		        	
+			        $().toastmessage('showToast', {
+			             text     : "The search has timed out. This may be an issue with your Internet connection, you may have breached Twitter's hourly search limit, or Twitter's API may be down. Please try again later. If problems persist, you may want to clear the data in your browser.",
+						 type     : 'error',
+			             sticky   : true,
+			             position : 'middle-center'
+			        });
+			        
+			        $('#loader').hide();	
+
+		        },
 	            success: function(users) {
 	           	    $.each(users, function(ind,user) {
 	           	    	geocodeUser(ind,user);
@@ -620,21 +636,20 @@ function loadMap(map){
 	    //SYNCHRONOUS FUNCTIONS AT END OF ASYNC THREADS	
 	    
 	    /**
-	     * Display no_results canvas
+	     * Display no results toast
 	     */
 		function noResults() {
 			
-		    changeCanvas('no_results');
-			$('#MapLabel').click(function() {
-	            changeCanvas('no_results');
-	        });	    
+	        $().toastmessage('showToast', {
+	             text     : 'No Tweets found. Please modify your search or try again later.',
+				 type     : 'warning',
+				 stayTime : 4500,  
+	             sticky   : false,
+	             position : 'middle-center'
+	        });
 	        
-		    postLoadFormat();
+            $('#loader').hide();
 	
-		    if (global.pin) {
-			    removePin();
-		    }
-		    
 		}
 		
 	    /**
@@ -657,14 +672,14 @@ function loadMap(map){
 			
 			if (done) {
 				
+				$('#MapLabel').click(function() {
+		            changeCanvas('Map');
+	            });
+			    $('#Map').css('left',global.horizontalMargin + 'px');
+			    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
+				    
 				if (hasResults){
 					
-					$('#MapLabel').click(function() {
-			            changeCanvas('Map');
-		            });
-				    $('#Map').css('left',global.horizontalMargin + 'px');
-				    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
-				    
 				    if (global.pin) {
 				    	zoom(global.content,global.map,zoomFromPin);
 				    } else {
@@ -673,11 +688,16 @@ function loadMap(map){
 				     
 				} else {
 					
-					changeCanvas('no_location');
-					$('#MapLabel').click(function() {
-			            changeCanvas('no_location');
-		            });
-		            
+			        $().toastmessage('showToast', {
+			             text     : 'Tweets found, but none are geocoded. Please modify your search or try again later.',
+						 type     : 'warning',
+						 stayTime : 4500,  
+			             sticky   : false,
+			             position : 'middle-center'
+			        });
+			        
+		            $('#loader').hide();
+			            
 				}
 				
 				postLoadFormat();
@@ -783,7 +803,7 @@ function loadMap(map){
 						 stayTime : 4500,  
 			             sticky   : false,
 			             position : 'middle-center',
-			             type     : 'notice',
+			             type     : 'notice'
 			        });
 			        
 			        //zoom extents if none within radius
@@ -796,7 +816,7 @@ function loadMap(map){
 						 stayTime : 4500,  
 			             sticky   : false,
 			             position : 'middle-center',
-			             type     : 'notice',
+			             type     : 'notice'
 			        });
 			
 			    }
@@ -840,23 +860,31 @@ function loadMap(map){
 				content.marker = repeat.marker;
 				repeat.marker.title = "Multiple Tweets";
 		    } else {
-		    	var currKey = global.getKey();
-		    	global.nextKey();
 		    	
-		        content.marker = new google.maps.Marker(
-			        {
-			            'position': new google.maps.LatLng(content.lat,content.lng),
-			            'map': map,
-			            'icon': 'images/blue_Marker' + currKey +'.png',
-			            'title': TwitterDateConverter(result.created_at),
-			            'key': currKey
-			        }//marker array
-				);
-		        
-		        google.maps.event.addListener(content.marker , 'click', function() {
-					highlight(this);
-				});        
+		    	if (global.getKey() < 26) {
+		    		
+			    	var currKey = global.getKeyAsChar();
+
+			        content.marker = new google.maps.Marker(
+				        {
+				            'position': new google.maps.LatLng(content.lat,content.lng),
+				            'map': map,
+				            'icon': 'images/blue_Marker' + currKey +'.png',
+				            'title': TwitterDateConverter(result.created_at),
+				            'key': currKey
+				        }//marker array
+					);
+			        
+			        google.maps.event.addListener(content.marker , 'click', function() {
+						highlight(this);
+					});
+					
+					global.nextKey();
+					
+			    }
+		    		
 		    }
+		    	
 		    
 		    global.addContent(content);
 		    
