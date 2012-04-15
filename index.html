@@ -48,8 +48,8 @@
 			<li id="MapLabel">
 				<div title="Show map">Map</div>  
 			</li> 
-			<li id="EditorsPicksLabel">
-				<div title="Show editor's picks">Editor's Picks</div>  
+			<li id="GreatSearchesLabel">
+				<div title="Show great searches">Great Searches</div>  
 			</li>
 			<li id="AboutLabel">
 				<div title="Show website information">About</div>
@@ -63,12 +63,12 @@
 		<div class="canvas" id="Map">
 			Loading Tweets...
 		</div>
-		<div class="canvas canvasText" id="EditorsPicks">
+		<div class="canvas canvasText" id="GreatSearches">
 			<h3>Below are some my of favorite searches. <a href= "mailto:dvizzini@pintweets.com" target="_blank">Contact me</a> to suggest others.</h3>
-			<p><a href="http://www.pintweets.com/">#nowplaying</a></p>
-			<p><a href="#tweetContent=%23godblessamerica">#godblessamerica</a></p>
-			<p><a href="#tweetContent=%22Abraham%20Lincoln%22&geocode=-7.003327635865509,107.89065420527345,100mi">Abraham Lincoln in Indonesia</a></p>
-			<p><a href="#tweetContent=%22Jenny%20from%20the%20block%22&geocode=35.719373368765346,137.93100646250014,500mi">Jenny from the Block in Japan</a></p>
+			<p><a onclick="loadSearch('tweetContent=%23nowplaying');">#nowplaying</a></p>
+			<p><a onclick="loadSearch('tweetContent=%23godblessamerica');">#godblessamerica</a></p>
+			<p><a onclick="loadSearch('tweetContent=%22Abraham%20Lincoln%22&geocode=-7.003327635865509,107.89065420527345,100mi');">Abraham Lincoln in Indonesia</a></p>
+			<p><a onclick="loadSearch('tweetContent=%22Jenny%20from%20the%20block%22&geocode=35.719373368765346,137.93100646250014,500mi');">Jenny from the Block in Japan</a></p>
 		</div>
 		<div class="canvas canvasText" id="About">
 			<h3>"Facebook feels like a mall. Twitter feels like the street."</br>    -William Gibson</h3>
@@ -94,7 +94,7 @@
 			<p>Feel free to contact me, Daniel Vizzini, at <b><a href= "mailto:dvizzini@pintweets.com" target="_blank">dvizzini@pintweets.com</a></b>. Follow me at <a href="http://twitter.com/#!/vizzmaster" target="_blank">@vizzmaster</a>.</p>
 			<p>I would love to know about bugs or to hear your suggestions.</p>
 			<h3>Have a great search?</h3>
-			<p>Please contact me. I might add it to the Editor's Picks.</p>
+			<p>Please contact me. I might add it to Great Searches.</p>
 			<h3>Want to contribute to the code?</h3>
 			<p>Please contact me. I would love to add some HTML5 and a backend, likely in node.js. You are most welcome to do this or whatever else your heart desires.</p>
 			<h3>Can you just show me the GitHub?</h3>
@@ -113,7 +113,7 @@
 			<span class = "sideCanvas" id="Search">
 				<form method="get" id="searchForm">
 					<fieldset class="search" title="Enable pin placement">
-						<div>Click the "Pin" button, place pin on map and enter radius in miles. <b>Retweets and @mentions from afar can also appear.</b></div>
+						<div>Click the "Pin" button, place pin on map and enter radius in miles.</div>
 						<div class="box"id ="pinButton">Pin</div> <input type="text" class="box" id="radius">
 						<div style="clear: both;"></div>
 						<div>Enter content (including hashtags):</div>
@@ -126,7 +126,7 @@
 						<input type="text" class="box date" id="since">
 						<div>Until (yyyy-mm-dd):</div>
 						<input type="text" class="box date" id="until">
-						<div id="refreshMap" title="Refresh map with above criteria">Refresh Map</div>
+						<div id="refreshMap" title="Refresh map with above criteria">Submit</div>
 						<img id="loader" src="images/ajax-loader.gif" alt="Loading Tweets..." />
 					</fieldset>
 				</form>

@@ -16,10 +16,21 @@ $(document).ready(function(){
 
     //initialize jQuery event handlers
     $('#refreshMap').click(function() {
+    	
         if (global) { 
         	global.removeMarkers();
         }
-        loadMap(global.map);
+        
+        if (global.pin && !($('#radius').val() > 0)) {
+	        $().toastmessage('showToast', {
+	             text     : "You must enter a radius in miles if a pin is on the map.",
+				 type     : 'warning',
+	             sticky   : true,
+	             position : 'middle-center'
+	        });        	
+        } else {
+	        loadMap(global.map);        	
+        }
     });
 
     $('.date').datepicker({ dateFormat: 'yy-mm-dd' });//initializes date inputs
@@ -176,6 +187,13 @@ if (typeof(Number.prototype.toRad) === "undefined") {
 
 //SYNCHRONOUS FUNCTIONS
 
+/**
+ * refreshes window with new search
+ */
+function loadSearch(hashString) {
+	window.location.hash = hashString;
+	window.location.reload(true);
+}
 /**
  * populates form from uri 
  */
@@ -785,8 +803,22 @@ function loadMap(map){
 				var oneOutOfBounds = false;
 			    
 			    for(i=0;i<markers.length;i++){
+			    	
+			    	var radius = $('#radius').val();
+			    	var relaxation = 1;
+			    	
+			    	//be more relaxed about smaller radii
+					if (radius <= 100) {
+						relaxation = 3;
+					} else if (radius <= 500) {
+						relaxation = 2;
+					} else if (radius <= 1000) {
+						relaxation = 1.5;
+					} else {
+						relaxation = 1;
+					}
 			
-			    	if (haversine(global.pin.getPosition(), markers[i].position) < $('#radius').val() * 3 ){
+			    	if (haversine(global.pin.getPosition(), markers[i].position) < radius * relaxation ){
 						bounds.extend(markers[i].position);
 						allOutOfBounds = false;
 			    	} else {
@@ -856,13 +888,13 @@ function loadMap(map){
 			
 		    var repeat = findSameLoc(content);
 		
-		    if (repeat) {
-				content.marker = repeat.marker;
-				repeat.marker.title = "Multiple Tweets";
-		    } else {
-		    	
-		    	if (global.getKey() < 26) {
-		    		
+	    	if (global.getKey() < 26) {
+
+			    if (repeat) {
+					content.marker = repeat.marker;
+					repeat.marker.title = "Multiple Tweets";
+			    } else {
+
 			    	var currKey = global.getKeyAsChar();
 
 			        content.marker = new google.maps.Marker(
@@ -880,30 +912,29 @@ function loadMap(map){
 					});
 					
 					global.nextKey();
-					
-			    }
+						
+				}
+		    	
+			    global.addContent(content);
+			    
+			    $('.below').css('margin-bottom','10px');
+			    $('.wrapper').css('border-bottom',1);
+			
+			    $('#caption').append(
+					'<div class="captionDiv caption'+content.marker.key+'"><div class="captionLetter">'+content.marker.key+'</div><a class="captionPic" href="http://twitter.com/#!/'+content.user+'" target="_blank"><img width="48" height="48" src="'+content.img+'"/></a><div class="captionContent">'+content.text.tweetEncode()+' <em>'+TwitterDateConverter(content.time)+'</em></div></div>'
+			    );
+			    
+			    $('.captionLetter').click( function() {
+			        var new_position = $('#MapLabel').offset();
+			
+			        global.map.setCenter(global.content[$(this).text().trim().charCodeAt()-65].marker.position);
+			        highlight(global.content[$(this).text().trim().charCodeAt()-65].marker);
+			
+			        window.scrollTo(new_position.left,new_position.top);
+			    });
 		    		
 		    }
-		    	
-		    
-		    global.addContent(content);
-		    
-		    $('.below').css('margin-bottom','10px');
-		    $('.wrapper').css('border-bottom',1);
-		
-		    $('#caption').append(
-				'<div class="captionDiv caption'+content.marker.key+'"><div class="captionLetter">'+content.marker.key+'</div><a class="captionPic" href="http://twitter.com/#!/'+content.user+'" target="_blank"><img width="48" height="48" src="'+content.img+'"/></a><div class="captionContent">'+content.text.tweetEncode()+' <em>'+TwitterDateConverter(content.time)+'</em></div></div>'
-		    );
-		    
-		    $('.captionLetter').click( function() {
-		        var new_position = $('#MapLabel').offset();
-		
-		        global.map.setCenter(global.content[$(this).text().trim().charCodeAt()-65].marker.position);
-		        highlight(global.content[$(this).text().trim().charCodeAt()-65].marker);
-		
-		        window.scrollTo(new_position.left,new_position.top);
-		    });
-		    
+		    			    
 			result.waiting = false;	    	
 			checkForDone();
 			
