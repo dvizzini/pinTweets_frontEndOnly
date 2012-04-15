@@ -17,10 +17,6 @@ $(document).ready(function(){
     //initialize jQuery event handlers
     $('#refreshMap').click(function() {
     	
-        if (global) { 
-        	global.removeMarkers();
-        }
-        
         if (global.pin && !($('#radius').val() > 0)) {
 	        $().toastmessage('showToast', {
 	             text     : "You must enter a radius in miles if a pin is on the map.",
@@ -29,7 +25,13 @@ $(document).ready(function(){
 	             position : 'middle-center'
 	        });        	
         } else {
+
+	        if (global) { 
+	        	global.removeMarkers();
+	        }
+        
 	        loadMap(global.map);        	
+
         }
     });
 
