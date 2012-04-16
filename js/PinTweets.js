@@ -101,6 +101,7 @@ function Global() {
     this.horizontalMargin = 15;
     this.pinBoolean = false;
 	this.markerKey = 0
+	this.firstSearch = true;
 
     this.nextKey = function() {
         return this.markerKey++;
@@ -197,6 +198,18 @@ function loadSearch(hashString) {
 	window.location.hash = hashString;
 	window.location.reload(true);
 }
+
+
+/**
+ * changes Map canvas by setting new click listener
+ */
+function changeMapCanvas(label) {
+	changeCanvas(label);
+	$('#MapLabel').click(function() {
+		changeCanvas(label);
+    });	
+}
+
 /**
  * populates form from uri 
  */
@@ -439,12 +452,20 @@ function loadMap(map){
         timeout:15000,
         error: function() {
         	
-	        $().toastmessage('showToast', {
-	             text     : "The search has timed out. This may be an issue with your Internet connection, you may have breached Twitter's hourly search limit, or Twitter's API may be down. Please try again later. If problems persist, you may want to clear the data in your browser.",
-				 type     : 'error',
-	             sticky   : true,
-	             position : 'middle-center'
-	        });
+        	if (global.firstSearch) {
+        		
+        		changeMapCanvas('timeout');
+        		
+        	} else {
+
+		        $().toastmessage('showToast', {
+		             text     : "The search has timed out. This may be an issue with your Internet connection, you may have breached Twitter's hourly search limit, or Twitter's API may be down. Please try again later. If problems persist, you may want to clear the data in your browser.",
+					 type     : 'error',
+		             sticky   : true,
+		             position : 'middle-center'
+		        });
+        		
+        	}
 	        
 			$('#loader').hide();	
 
@@ -518,7 +539,6 @@ function loadMap(map){
 	        userNames += result.from_user + ',';
 	    });
 	    
-	    userNames = userNames.slice(0,userNames.length - 1)
 	    getLocations(userNames);
 		
 		/**
@@ -568,12 +588,20 @@ function loadMap(map){
 	            //TODO: Handle 400's better
 		        error: function() {
 		        	
-			        $().toastmessage('showToast', {
-			             text     : "The search has timed out. This may be an issue with your Internet connection, you may have breached Twitter's hourly search limit, or Twitter's API may be down. Please try again later. If problems persist, you may want to clear the data in your browser.",
-						 type     : 'error',
-			             sticky   : true,
-			             position : 'middle-center'
-			        });
+		        	if (global.firstSearch) {
+		        		
+		        		changeMapCanvas('timeout');
+		        		
+		        	} else {
+		
+				        $().toastmessage('showToast', {
+				             text     : "The search has timed out. This may be an issue with your Internet connection, you may have breached Twitter's hourly search limit, or Twitter's API may be down. Please try again later. If problems persist, you may want to clear the data in your browser.",
+							 type     : 'error',
+				             sticky   : true,
+				             position : 'middle-center'
+				        });
+		        		
+		        	}
 			        
 			        $('#loader').hide();	
 
@@ -597,17 +625,25 @@ function loadMap(map){
 	    
 	            console.log('user location: ' + user.location);
 	            
-                if ((user.location == null) ? false : (user.location.search(regexp) == -1) ? false : (user.location.match(regexp).length != 2) ? false : (user.location.match(regexp)[0] >= -90 && user.location.match(regexp)[0] <=90 && user.location.match(regexp)[1] >= -180 && user.location.match(regexp)[1] <= 180)) {
-                    gotCoords(user.location.match(regexp)[0],user.location.match(regexp)[1]);
-                } else {
-                    geocoder.geocode( { 'address': user.location }, function(results, status) {
-                        if (status == google.maps.GeocoderStatus.OK) {
-                            gotCoords(results[0].geometry.location.lat(),results[0].geometry.location.lng())
-                        } else {
-                        	didNotGetCoords();
-                        }
-                    });
-                }
+	            if (!(user.location == null)) {
+	                if ((user.location.search(regexp) == -1) ? false : (user.location.match(regexp).length != 2) ? false : (user.location.match(regexp)[0] >= -90 && user.location.match(regexp)[0] <=90 && user.location.match(regexp)[1] >= -180 && user.location.match(regexp)[1] <= 180)) {
+	                    gotCoords(user.location.match(regexp)[0],user.location.match(regexp)[1]);
+	                } else {
+	                	if (!(user.location.replace(/\s/g) == '')) {
+		                    geocoder.geocode( { 'address': user.location }, function(results, status) {
+		                        if (status == google.maps.GeocoderStatus.OK) {
+		                            gotCoords(results[0].geometry.location.lat(),results[0].geometry.location.lng())
+		                        } else {
+		                        	didNotGetCoords();
+		                        }
+		                    });                		
+	                	} else {
+	                       	didNotGetCoords();
+	                	}
+	                }
+	            } else {
+                   	didNotGetCoords();
+	            }
                 
                 /*
                  * Assigns lat-lng to Tweet and any with duplicate user names
@@ -661,13 +697,21 @@ function loadMap(map){
 	     */
 		function noResults() {
 			
-	        $().toastmessage('showToast', {
-	             text     : 'No Tweets found. Please modify your search or try again later.',
-				 type     : 'warning',
-				 stayTime : 4500,  
-	             sticky   : false,
-	             position : 'middle-center'
-	        });
+			if (global.firstSearch) {
+								
+				changeMapCanvas('no_results');
+				
+			} else {
+
+		        $().toastmessage('showToast', {
+		             text     : 'No Tweets found. Please modify your search or try again later.',
+					 type     : 'warning',
+					 stayTime : 4500,  
+		             sticky   : false,
+		             position : 'middle-center'
+		        });
+				
+			}
 	        
             $('#loader').hide();
 	
@@ -688,7 +732,7 @@ function loadMap(map){
 				} else {
 					console.log(i + ' is done.');
 				}
-				if (results[i].geo_info) {hasResults = true;}
+				if (results[i].geo_info.valid) {hasResults = true;}
 			}
 			
 			if (done) {
@@ -701,22 +745,32 @@ function loadMap(map){
 				    
 				if (hasResults){
 					
+					global.firstSearch = false;
+					
 				    if (global.pin) {
 				    	zoom(global.content,global.map,zoomFromPin);
 				    } else {
 					    zoom(global.content,global.map,zoomExtents);		    	
 				    }
-				     
+				    
 				} else {
 					
-			        $().toastmessage('showToast', {
-			             text     : 'Tweets found, but none are geocoded. Please modify your search or try again later.',
-						 type     : 'warning',
-						 stayTime : 4500,  
-			             sticky   : false,
-			             position : 'middle-center'
-			        });
-			        
+					if (global.firstSearch) {
+
+						changeMapCanvas('no_location');
+
+					} else {
+						
+				        $().toastmessage('showToast', {
+				             text     : 'Tweets found, but none are geocoded. Please modify your search or try again later.',
+							 type     : 'warning',
+							 stayTime : 4500,  
+				             sticky   : false,
+				             position : 'middle-center'
+				        });
+			        						
+					}
+					
 		            $('#loader').hide();
 			            
 				}

@@ -68,6 +68,17 @@
 		<div class="canvas" id="Map">
 			Loading Tweets...
 		</div>
+		<div class="canvas canvasText" id="no_location">
+			<h2>Tweets found, but none are geocoded.</h2>
+			<h2>Please modify your search or try again later.</h2>
+		</div>		
+		<div class="canvas canvasText" id="no_results">
+			<h2>No Tweets found.</h2>
+			<h2>Please modify your search or try again later.</h2>
+		</div>
+	    <div class="canvas canvasText" id="timeout">
+			<h2>The search has timed out. This may be an issue with your Internet connection, or you may have breached Twitter's hourly search limit. Please try again later.</h2>
+		</div>
 		<div class="canvas canvasText" id="GreatSearches">
 			<h3>Below are some my of favorite searches. <a href= "mailto:dvizzini@pintweets.com" target="_blank">Contact me</a> to suggest others.</h3>
 			<p><a onclick="loadSearch('tweetContent=%23nowplaying');">#nowplaying</a></p>
