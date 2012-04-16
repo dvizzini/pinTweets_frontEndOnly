@@ -435,7 +435,7 @@ function loadMap(map){
         success:function(data){
             geocodeTweets(map,data);
         },
-        timeout:10000,
+        timeout:15000,
         error: function() {
         	
 	        $().toastmessage('showToast', {
@@ -563,7 +563,7 @@ function loadMap(map){
 	        	type: "POST",
 	            crossDomain:true,
 	            dataType: 'jsonp',
-	            timeout:10000,
+	            timeout:15000,
 	            //TODO: Handle 400's better
 		        error: function() {
 		        	
