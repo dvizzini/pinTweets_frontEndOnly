@@ -1,5 +1,10 @@
 //JS for TweetPin
 
+//IE REDIRECT
+if (navigator.appName=='Microsoft Internet Explorer' && window.location=='index.html') {
+    window.location='PinTweets_ie.html'; //URL to redirect to
+}
+
 //ONE GLOBAL OBJECT
 var global = new Global();
 
@@ -88,11 +93,6 @@ $(document).ready(function(){
     populateForm();
     loadMap(map);
 });
-
-//IE REDIRECT
-if (navigator.appName=='Microsoft Internet Explorer' && window.location=='index.html') {
-    window.location='PinTweets_ie.html'; //URL to redirect to
-}
 
 /**
  * container for global variables
