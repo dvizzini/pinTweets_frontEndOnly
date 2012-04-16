@@ -508,9 +508,10 @@ function loadMap(map){
 	 */
 	function geocodeTweets(map,data) {
 		
+	    var regexp = /\-*\d+[.,]\d+/g;
 	    var results = data.results;
 		var userNames = '';
-	
+	    
 		if (!results || results.length == 0) {
 	        return noResults();
 		} else {
@@ -620,9 +621,6 @@ function loadMap(map){
 	    	 */
             function geocodeUser(ind,user) {
             	
-			    var geocoder = new google.maps.Geocoder();
-			    var regexp = /\-*\d+[.,]\d+/g;
-	    
 	            console.log('user location: ' + user.location);
 	            
 	            if (!(user.location == null)) {
@@ -630,7 +628,7 @@ function loadMap(map){
 	                    gotCoords(user.location.match(regexp)[0],user.location.match(regexp)[1]);
 	                } else {
 	                	if (!(user.location.replace(/\s/g) == '')) {
-		                    geocoder.geocode( { 'address': user.location }, function(results, status) {
+		                    new google.maps.Geocoder().geocode( { 'address': user.location }, function(results, status) {
 		                        if (status == google.maps.GeocoderStatus.OK) {
 		                            gotCoords(results[0].geometry.location.lat(),results[0].geometry.location.lng())
 		                        } else {
