@@ -6,10 +6,15 @@ Wishlist:
 -Handle limit breach better. Actually read JSON's instead of relying on timeout.
 -Get hand icon to work better when dragging pin.
 
-Ad-hoc location fixes to be implemented:
+Ad-hoc location fixes to be implemented on server-side:
 -Get rid of "Earth" (maps to Earth, Texas)
+-Get rid of "Cloud 9" (maps to Cloud Nine, MO)
 -Make "Jersey" "New Jersey" (maps to isle of tax-evasion in English Channel)
+-"Mactown" is in Antarctica?
 -Map all three digit numbers as area codes
+-Make "Rack City" and "Vega$" "Las Vegas, NV"
+-Fix the "Cali" problem. Sorry, Colombia.
+-Get some Mechanical Turk action going with a long list?
 
 (The MIT License)
 
