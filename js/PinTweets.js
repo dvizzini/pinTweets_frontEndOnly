@@ -21,7 +21,8 @@ $(document).ready(function(){
 	        $().toastmessage('showToast', {
 	             text     : "You must enter a radius in miles if a pin is on the map.",
 				 type     : 'warning',
-	             sticky   : true,
+				 stayTime : 4500,  
+	             sticky   : false,
 	             position : 'middle-center'
 	        });        	
         } else {
