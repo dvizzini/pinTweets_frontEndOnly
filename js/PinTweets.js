@@ -1,4 +1,5 @@
 //JS for TweetPin
+//Copyright Daniel Vizzini, under MIT liscense (see source)
 
 //IE REDIRECT
 if (navigator.appName=='Microsoft Internet Explorer' && window.location=='index.html') {
@@ -89,9 +90,20 @@ $(document).ready(function(){
     var map = new google.maps.Map(document.getElementById('Map'),myOptions);
     global.setMap(map);
 
-    //start her up
     populateForm();
-    loadMap(map);
+    
+    //start her up
+	$.ajax('area_codes.json', {
+        dataType: "json",
+        success:function(data) {
+        	global.area_codes = data.area_codes;
+        	loadMap();
+        },
+        timeout:15000,
+        error: onTimeout//nearly impossible
+    });
+	
+
 });
 
 /**
@@ -102,6 +114,9 @@ function Global() {
     this.pinBoolean = false;
 	this.markerKey = 0
 	this.firstSearch = true;
+	
+	//constant to be filled on load
+	this.area_codes = {};
 
     this.nextKey = function() {
         return this.markerKey++;
@@ -192,8 +207,29 @@ if (typeof(Number.prototype.toRad) === "undefined") {
 //SYNCHRONOUS FUNCTIONS
 
 /**
- * refreshes window with new search
+ * displays appropriate message and hides ajax loader for timeout 
  */
+function onTimeout() {
+	
+	if (global.firstSearch) {
+		
+		changeMapCanvas('timeout');
+		
+	} else {
+
+        $().toastmessage('showToast', {
+             text     : "The search has timed out. This may be an issue with your Internet connection, you may have breached Twitter's hourly search limit, or Twitter's API may be down. Please try again later. If problems persist, you may want to clear the data in your browser.",
+			 type     : 'error',
+             sticky   : true,
+             position : 'middle-center'
+        });
+		
+	}
+    
+	$('#loader').hide();		
+	
+}
+
 function loadSearch(hashString) {
 	window.location.hash = hashString;
 	window.location.reload(true);
@@ -423,13 +459,41 @@ function removePin() {
     
 };
 
+/**
+ * Binary search of area_codes json, lightly modified from http://www.nczonline.net/blog/2009/09/01/computer-science-in-javascript-binary-search/
+ */
+function areaCodeBinarySearch(key){
+
+    var items = global.area_codes,
+    	startIndex  = 0,
+        stopIndex   = items.length - 1,
+        middle      = Math.floor((stopIndex + startIndex)/2);
+
+    while(items[middle].area_code != key && startIndex < stopIndex){
+
+        //adjust search area
+        if (key < items[middle].area_code){
+            stopIndex = middle - 1;
+        } else if (key > items[middle].area_code){
+            startIndex = middle + 1;
+        }
+
+        //recalculate middle
+        middle = Math.floor((stopIndex + startIndex)/2);
+    }
+
+    //make sure it's the right key
+    return (items[middle].area_code != key) ? -1 : items[middle].lat + ',' + items[middle].lng;
+}
+
+
 
 //LEVEL 0 ASYNC FUNCTION
 
 /**
  * Gets Tweets from Twitter API
  */
-function loadMap(map){
+function loadMap(){
 	
 	var searchURL = getAPIURL();
 
@@ -447,29 +511,10 @@ function loadMap(map){
         crossDomain:true,
         dataType: "jsonp",
         success:function(data){
-            geocodeTweets(map,data);
+            geocodeTweets(global.map,data);
         },
         timeout:15000,
-        error: function() {
-        	
-        	if (global.firstSearch) {
-        		
-        		changeMapCanvas('timeout');
-        		
-        	} else {
-
-		        $().toastmessage('showToast', {
-		             text     : "The search has timed out. This may be an issue with your Internet connection, you may have breached Twitter's hourly search limit, or Twitter's API may be down. Please try again later. If problems persist, you may want to clear the data in your browser.",
-					 type     : 'error',
-		             sticky   : true,
-		             position : 'middle-center'
-		        });
-        		
-        	}
-	        
-			$('#loader').hide();	
-
-        }
+        error: onTimeout
     });
 	
 	/**
@@ -508,7 +553,7 @@ function loadMap(map){
 	 */
 	function geocodeTweets(map,data) {
 		
-	    var regexp = /\-*\d+[.,]\d+/g;
+	    var regexp = /\-*\d+[.,]\d+/g;//for ubertwitter and the like
 	    var results = data.results;
 		var userNames = '';
 	    
@@ -587,26 +632,7 @@ function loadMap(map){
 	            dataType: 'jsonp',
 	            timeout:15000,
 	            //TODO: Handle 400's better
-		        error: function() {
-		        	
-		        	if (global.firstSearch) {
-		        		
-		        		changeMapCanvas('timeout');
-		        		
-		        	} else {
-		
-				        $().toastmessage('showToast', {
-				             text     : "The search has timed out. This may be an issue with your Internet connection, you may have breached Twitter's hourly search limit, or Twitter's API may be down. Please try again later. If problems persist, you may want to clear the data in your browser.",
-							 type     : 'error',
-				             sticky   : true,
-				             position : 'middle-center'
-				        });
-		        		
-		        	}
-			        
-			        $('#loader').hide();	
-
-		        },
+		        error: onTimeout,
 	            success: function(users) {
 	           	    $.each(users, function(ind,user) {
 	           	    	geocodeUser(ind,user);
@@ -617,76 +643,100 @@ function loadMap(map){
 	    	//LEVEL 2 ASYNC FUNCTION
 	    	
 	    	/**
-	    	 * Requests lat-lng from Google and handles response
+	    	 * If necessary, requests lat-lng from Google and handles response
 	    	 */
             function geocodeUser(ind,user) {
             	
 	            console.log('user location: ' + user.location);
 	            
 	            if (!(user.location == null)) {
-	                if ((user.location.search(regexp) == -1) ? false : (user.location.match(regexp).length != 2) ? false : (user.location.match(regexp)[0] >= -90 && user.location.match(regexp)[0] <=90 && user.location.match(regexp)[1] >= -180 && user.location.match(regexp)[1] <= 180)) {
-	                    gotCoords(user.location.match(regexp)[0],user.location.match(regexp)[1]);
+	            	
+		            var locationString = translateFromTwitter(user.location);
+
+	                if ((locationString.search(regexp) == -1) ? false : (locationString.match(regexp).length != 2) ? false : (locationString.match(regexp)[0] >= -90 && locationString.match(regexp)[0] <=90 && locationString.match(regexp)[1] >= -180 && locationString.match(regexp)[1] <= 180)) {
+	                    gotCoords(user.screen_name,locationString.match(regexp)[0],locationString.match(regexp)[1]);
 	                } else {
-	                	if (!(user.location.replace(/\s/g) == '')) {
-		                    new google.maps.Geocoder().geocode( { 'address': user.location }, function(results, status) {
+	                	if (!(locationString.replace(/\s/g) == '')) {
+		                    new google.maps.Geocoder().geocode( { 'address': locationString }, function(results, status) {
 		                        if (status == google.maps.GeocoderStatus.OK) {
-		                            gotCoords(results[0].geometry.location.lat(),results[0].geometry.location.lng())
+		                            gotCoords(user.screen_name,results[0].geometry.location.lat(),results[0].geometry.location.lng())
 		                        } else {
-		                        	didNotGetCoords();
+		                        	didNotGetCoords(user.screen_name);
 		                        }
 		                    });                		
 	                	} else {
-	                       	didNotGetCoords();
+	                       	didNotGetCoords(user.screen_name);
 	                	}
 	                }
 	            } else {
-                   	didNotGetCoords();
+                   	didNotGetCoords(user.screen_name);
 	            }
                 
-                /*
-                 * Assigns lat-lng to Tweet and any with duplicate user names
-                 */
-	            function gotCoords(lat,lng) {
-	            	
-					//CALL TO THOSE DROPPED DURING USERNAME CHECK
-			        $.each(results,function () {
-			        	
-			            if (!this.waiting) {return;}
-			            if (this.from_user == user.screen_name) {
-			            	
-			            	this.geo_info.valid = true;
-			                this.geo_info.lat = lat;
-			                this.geo_info.lng = lng;
-			                addToMap(map,this);
-			                
-			            }
-			            
-			        });
-				
-	            }
-	
-                /*
-                 * Makes sure that Tweet and those with duplicate user names is no longer waiting
-                 */
-	            function didNotGetCoords() {
-	
-					//CALL TO THOSE DROPPED DURING USERNAME CHECK
-			        $.each(results,function () {
-			            if (!this.waiting) {return;}
-			            if (this.from_user == user.screen_name) {
-			            	
-							this.waiting = false;
-							
-			            }
-			        })
-	
-					checkForDone();
-	
-	            }
-	
             }
 	            
 	    }
+	    
+	    //SYNCHRONOUS FUNCTIONS CALLED AT LEVEL 2
+	    
+        /*
+         * Assigns lat-lng to Tweet and any with duplicate user names
+         */
+        function gotCoords(userName,lat,lng) {
+        	
+	        $.each(results,function () {
+	        	
+	            if (!this.waiting) {return;}
+	            if (this.from_user == userName) {
+	            	
+	            	this.geo_info.valid = true;
+	                this.geo_info.lat = lat;
+	                this.geo_info.lng = lng;
+	                addToMap(map,this);
+	                
+	            }
+	            
+	        });
+		
+        }
+
+        /*
+         * Makes sure that Tweet and those with duplicate user names is no longer waiting
+         */
+        function didNotGetCoords(userName) {
+
+	        $.each(results,function () {
+	            if (!this.waiting) {return;}
+	            if (this.from_user == userName) {
+	            	
+					this.waiting = false;
+					
+	            }
+	        });
+
+			checkForDone();
+
+        }
+        
+        function translateFromTwitter(locationString) {
+        	
+        	locationString = locationString.replace(/^[^A-Za-z0-9]+/,'').replace(/[^A-Za-z0-9]+$/,'').replace(/\$/ig,'s').replace(/Rack City/ig, 'Las Vegas');
+        	
+			if (/^\d{3}$/i.test(locationString) || /^\d{3}\D/i.test(locationString) || /\D\d{3}$/i.test(locationString)|| /\D\d{3}\D/i.test(locationString)) {
+				var found = areaCodeBinarySearch(locationString.match(/\d{3}/)[0]);
+				return ((found == -1) ? locationString : found); 
+			} else if (/Cali/i.test(locationString) && !/Colombia/i.test(locationString)) {
+				return locationString.replace(/Cali/ig, "California");
+			} else if (/Jersey/i.test(locationString) && !/Britain/i.test(locationString) && !/Channel Island/i.test(locationString)) {
+				return locationString.replace(/Jersey/ig, "New Jersey");
+			} else if (/Cloud 9/i.test(locationString) || /Cloud Nine/i.test(locationString)) {
+				return '';
+			} else if (/Earth/i.test(locationString) && !/Texas/i.test(locationString)) {
+				return '';
+        	}
+        	
+        	return locationString;
+        	
+        }
 	    
 	    //SYNCHRONOUS FUNCTIONS AT END OF ASYNC THREADS	
 	    
