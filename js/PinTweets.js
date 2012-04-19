@@ -308,22 +308,47 @@ function populateForm() { //IF ANYONE FEELS GANGSTER MAKE A FULL-ON GRAMMER http
  * Populates list of Tweets below map 
  */
 function populateCaption() {
+	
+	//Sort, God bless Stackoverflow: http://stackoverflow.com/questions/979256/how-to-sort-an-array-of-javascript-objects
+	var sort_by = function(field, reverse, primer){
+
+	   var key = function (x) {return primer ? primer(x[field]) : x[field]};
+	
+	   return function (a,b) {
+	       var A = key(a), B = key(b);
+	       return (A < B ? -1 : (A > B ? 1 : 0)) * [1,-1][+!!reverse];
+	   }
+	}
+	
+	global.content.sort(sort_by('key', false, function(a){return a.toUpperCase()}));
+	
+	//Reformat because there are results
+    $('.below').css('margin-bottom','10px');
+    $('.wrapper').css('border-bottom',1);
+			
+	//populate caption
     $.each(global.content,function(i) {
         $('#caption').append(
             '<div class="captionDiv caption'+this.key+'"><div class="captionLetter">'+this.key+'</div><a class="captionPic" href="http://twitter.com/#!/'+this.user+'" target="_blank"><img width="48" height="48" src="'+this.img+'"/></a><div class="captionContent">'+this.text.tweetEncode()+' <em>'+TwitterDateConverter(this.time)+'</em></div></div>'
         );
     });
+    
+    //readjust width
+    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
 
-    $('.below').css('margin',0);
-
+	//set click listeners
     $('.captionLetter').click( function() {
+    	
         var new_position = $('#MapLabel').offset();
+        var markerChosen = binarySearch(global.content,'key',$(this).text().trim()).marker;
 
-        global.map.setCenter(global.content[$(this).text().trim().charCodeAt()-65].marker.position);
-        highlight(global.content[$(this).text().trim().charCodeAt()-65].marker);
+        global.map.setCenter(markerChosen.position);
+        highlight(markerChosen);
 
         window.scrollTo(new_position.left,new_position.top);
+        
     });
+
 };
 
 /**
@@ -460,21 +485,20 @@ function removePin() {
 };
 
 /**
- * Binary search of area_codes json, lightly modified from http://www.nczonline.net/blog/2009/09/01/computer-science-in-javascript-binary-search/
+ * Binary search of area_codes json, modified from http://www.nczonline.net/blog/2009/09/01/computer-science-in-javascript-binary-search/
  */
-function areaCodeBinarySearch(key){
+function binarySearch(array, keySet, key) {
 
-    var items = global.area_codes,
-    	startIndex  = 0,
-        stopIndex   = items.length - 1,
+    var startIndex  = 0,
+        stopIndex   = array.length - 1,
         middle      = Math.floor((stopIndex + startIndex)/2);
 
-    while(items[middle].area_code != key && startIndex < stopIndex){
+    while(array[middle][keySet] != key && startIndex < stopIndex){
 
         //adjust search area
-        if (key < items[middle].area_code){
+        if (key < array[middle][keySet]){
             stopIndex = middle - 1;
-        } else if (key > items[middle].area_code){
+        } else if (key > array[middle][keySet]){
             startIndex = middle + 1;
         }
 
@@ -483,10 +507,8 @@ function areaCodeBinarySearch(key){
     }
 
     //make sure it's the right key
-    return (items[middle].area_code != key) ? -1 : items[middle].lat + ',' + items[middle].lng;
+    return (array[middle][keySet] != key) ? null : array[middle];
 }
-
-
 
 //LEVEL 0 ASYNC FUNCTION
 
@@ -651,12 +673,13 @@ function loadMap(){
 	            
 	            if (!(user.location == null)) {
 	            	
-		            var locationString = translateFromTwitter(user.location);
-
-	                if ((locationString.search(regexp) == -1) ? false : (locationString.match(regexp).length != 2) ? false : (locationString.match(regexp)[0] >= -90 && locationString.match(regexp)[0] <=90 && locationString.match(regexp)[1] >= -180 && locationString.match(regexp)[1] <= 180)) {
-	                    gotCoords(user.screen_name,locationString.match(regexp)[0],locationString.match(regexp)[1]);
-	                } else {
-	                	if (!(locationString.replace(/\s/g) == '')) {
+                	if (!(user.location.replace(/\s/g) == '')) {
+                		
+			            var locationString = translateFromTwitter(user.location);
+	
+		                if ((locationString.search(regexp) == -1) ? false : (locationString.match(regexp).length != 2) ? false : (locationString.match(regexp)[0] >= -90 && locationString.match(regexp)[0] <=90 && locationString.match(regexp)[1] >= -180 && locationString.match(regexp)[1] <= 180)) {
+		                    gotCoords(user.screen_name,locationString.match(regexp)[0],locationString.match(regexp)[1]);
+		                } else {
 		                    new google.maps.Geocoder().geocode( { 'address': locationString }, function(results, status) {
 		                        if (status == google.maps.GeocoderStatus.OK) {
 		                            gotCoords(user.screen_name,results[0].geometry.location.lat(),results[0].geometry.location.lng())
@@ -664,10 +687,12 @@ function loadMap(){
 		                        	didNotGetCoords(user.screen_name);
 		                        }
 		                    });                		
-	                	} else {
-	                       	didNotGetCoords(user.screen_name);
-	                	}
-	                }
+		                }
+		                
+					} else {
+                       	didNotGetCoords(user.screen_name);
+					}
+					
 	            } else {
                    	didNotGetCoords(user.screen_name);
 	            }
@@ -713,21 +738,24 @@ function loadMap(){
 	            }
 	        });
 
-			checkForDone();
+			checkIfDone();
 
         }
         
         function translateFromTwitter(locationString) {
         	
-        	locationString = locationString.replace(/^[^A-Za-z0-9]+/,'').replace(/[^A-Za-z0-9]+$/,'').replace(/\$/ig,'s').replace(/Rack City/ig, 'Las Vegas');
+        	locationString = locationString.replace(/^[^A-Za-z0-9\-]+/,'').replace(/[^A-Za-z0-9]+$/,'').replace(/\$/ig,'s');
         	
 			if (/^\d{3}$/i.test(locationString) || /^\d{3}\D/i.test(locationString) || /\D\d{3}$/i.test(locationString)|| /\D\d{3}\D/i.test(locationString)) {
-				var found = areaCodeBinarySearch(locationString.match(/\d{3}/)[0]);
-				return ((found == -1) ? locationString : found); 
+				var found = binarySearch(global.area_codes, 'area_code',  locationString.match(/\d{3}/)[0]);
+				return ((found == null) ? locationString : (found.lat + ',' + found .lng)); 
 			} else if (/Cali/i.test(locationString) && !/Colombia/i.test(locationString)) {
 				return locationString.replace(/Cali/ig, "California");
 			} else if (/Jersey/i.test(locationString) && !/Britain/i.test(locationString) && !/Channel Island/i.test(locationString)) {
 				return locationString.replace(/Jersey/ig, "New Jersey");
+			//What up, Tyga?
+			} else if (/\WRack\s*City/i.test(locationString) || /^Rack\s*City/i.test(locationString)) {
+				return locationString.replace(/Rack\s*City/ig, "Las Vegas");
 			} else if (/Cloud 9/i.test(locationString) || /Cloud Nine/i.test(locationString)) {
 				return '';
 			} else if (/Earth/i.test(locationString) && !/Texas/i.test(locationString)) {
@@ -768,7 +796,7 @@ function loadMap(){
 	    /**
 	     * Checks to see if all waiting status of all results ar done, and changes canvas accordingly
 	     */
-		function checkForDone() {
+		function checkIfDone() {
 			var done = true;
 			var hasResults = false;
 			
@@ -789,11 +817,12 @@ function loadMap(){
 		            changeCanvas('Map');
 	            });
 			    $('#Map').css('left',global.horizontalMargin + 'px');
-			    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
 				    
 				if (hasResults){
 					
 					global.firstSearch = false;
+					
+					populateCaption();
 					
 				    if (global.pin) {
 				    	zoom(global.content,global.map,zoomFromPin);
@@ -987,6 +1016,7 @@ function loadMap(){
 			    'lng':result.geo_info.lng,
 			    'img':result.profile_image_url,
 			    'user':result.from_user,
+			    'key': null,
 			    'marker': null,
 			    'time':result.created_at
 			}
@@ -996,12 +1026,14 @@ function loadMap(){
 	    	if (global.getKey() < 26) {
 
 			    if (repeat) {
-					content.marker = repeat.marker;
 					repeat.marker.title = "Multiple Tweets";
+					content.marker = repeat.marker;
+					content.key = repeat.marker.key;
 			    } else {
 
 			    	var currKey = global.getKeyAsChar();
 
+					content.key = currKey;//for sort
 			        content.marker = new google.maps.Marker(
 				        {
 				            'position': new google.maps.LatLng(content.lat,content.lng),
@@ -1022,26 +1054,10 @@ function loadMap(){
 		    	
 			    global.addContent(content);
 			    
-			    $('.below').css('margin-bottom','10px');
-			    $('.wrapper').css('border-bottom',1);
-			
-			    $('#caption').append(
-					'<div class="captionDiv caption'+content.marker.key+'"><div class="captionLetter">'+content.marker.key+'</div><a class="captionPic" href="http://twitter.com/#!/'+content.user+'" target="_blank"><img width="48" height="48" src="'+content.img+'"/></a><div class="captionContent">'+content.text.tweetEncode()+' <em>'+TwitterDateConverter(content.time)+'</em></div></div>'
-			    );
-			    
-			    $('.captionLetter').click( function() {
-			        var new_position = $('#MapLabel').offset();
-			
-			        global.map.setCenter(global.content[$(this).text().trim().charCodeAt()-65].marker.position);
-			        highlight(global.content[$(this).text().trim().charCodeAt()-65].marker);
-			
-			        window.scrollTo(new_position.left,new_position.top);
-			    });
-		    		
 		    }
 		    			    
 			result.waiting = false;	    	
-			checkForDone();
+			checkIfDone();
 			
 		}
 		
