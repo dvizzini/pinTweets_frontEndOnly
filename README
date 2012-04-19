@@ -3,19 +3,10 @@ This website maps Tweets found using Twitter's search API, principally by geocod
 Wishlist:
 -HTML5 this up for a phone
 -Add node backend
--Handle limit breach better. Actually read JSON's instead of relying on timeout.
+	-Enable sign-in so that people can see who they follow, use straming API?
+	-Add learning mechanism for misplacced Tweets
+-Handle limit breach better. Actually read JSON's instead of relying on timeout (MUCH LESS OF AN ISSUE WITH NO API).
 -Get hand icon to work better when dragging pin.
-
-Ad-hoc location fixes to be implemented on server-side:
--Get rid of "Earth" (maps to Earth, Texas)
--Get rid of "Cloud 9" (maps to Cloud Nine, MO)
--Make "Jersey" "New Jersey" (maps to isle of tax-evasion in English Channel)
--"Mactown" is in Antarctica?
--Map all three digit numbers as area codes
--Make "Rack City" and "Vega$" "Las Vegas, NV"
--Change all "$" to "s"?
--Fix the "Cali" problem. Sorry, Colombia.
--Get some Mechanical Turk action going with a long list?
 
 (The MIT License)
 Copyright (c) 2012 Daniel Vizzini

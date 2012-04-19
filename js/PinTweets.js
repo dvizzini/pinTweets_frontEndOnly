@@ -12,6 +12,7 @@ var global = new Global();
 //ON LOAD
 $(document).ready(function(){
 
+	//chrome frames
     CFInstall.check({
         mode: 'overlay',
         destination: "http://www.waikiki.com"
@@ -37,7 +38,7 @@ $(document).ready(function(){
 	        	global.removeMarkers();
 	        }
         
-	        loadMap(global.map);        	
+	        loadMap();        	
 
         }
     });
@@ -56,7 +57,7 @@ $(document).ready(function(){
     $(window).bind('keypress', function(e) {
         if((e.keyCode || e.which) == 13){
             if (global) { global.removeMarkers() };
-            loadMap(global.map);
+            loadMap();
         }
     });
 
