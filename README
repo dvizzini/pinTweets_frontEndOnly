@@ -1,5 +1,7 @@
 This website maps Tweets found using Twitter's search API, principally by geocoding the names listed in Twitter user profiles. Its results are flawed but fun.
 
+IMPORTANT: GOOGLE GEOCODING API TIMES OUT FOR MOST RESULTS. MUST THROTTLE API AND HANDLE UI BY REZOOMING EVERY 8 SECONDS.
+
 Wishlist:
 -HTML5 this up for a phone
 -Add node backend
