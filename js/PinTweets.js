@@ -1,6 +1,8 @@
 //JS for TweetPin
 //Copyright Daniel Vizzini, under MIT liscense (see source)
 
+//TODO: Handle no internet connection
+
 //IE REDIRECT
 if (navigator.appName=='Microsoft Internet Explorer' && window.location=='index.html') {
     window.location='PinTweets_ie.html'; //URL to redirect to
@@ -111,13 +113,27 @@ $(document).ready(function(){
  * container for global variables
  */
 function Global() {
+	
     this.horizontalMargin = 15;
     this.pinBoolean = false;
 	this.markerKey = 0
 	this.firstSearch = true;
 	
-	//constant to be filled on load
-	this.area_codes = {};
+	//search parameters
+	this.searchesPerRound = 2;
+	this.requestedLocations = 50;
+	this.maxMarkers = 26;
+	this.searchInterval = 3000;//milliseconds
+	this.rezoomInterval = 2;//searchIntervals
+	
+	
+	//zoom message parameters
+	this.worldwideMessageShown = false;
+	this.localMessageShown = false;
+
+	
+	this.area_codes = new Object();
+	this.content = new Array();
 
     this.nextKey = function() {
         return this.markerKey++;
@@ -131,7 +147,7 @@ function Global() {
         return String.fromCharCode(parseInt(this.markerKey)+65);
 	}
 
-    this.addContent = function(con) {
+    this.pushContent = function(con) {
         this.content.push(con);        
     }
 
@@ -319,14 +335,18 @@ function populateCaption() {
 	       var A = key(a), B = key(b);
 	       return (A < B ? -1 : (A > B ? 1 : 0)) * [1,-1][+!!reverse];
 	   }
+	   
 	}
 	
 	global.content.sort(sort_by('key', false, function(a){return a.toUpperCase()}));
 	
+	//Clear captions for reformatting
+	$('#caption div').remove();
+	
 	//Reformat because there are results
     $('.below').css('margin-bottom','10px');
     $('.wrapper').css('border-bottom',1);
-			
+		
 	//populate caption
     $.each(global.content,function(i) {
         $('#caption').append(
@@ -351,6 +371,160 @@ function populateCaption() {
     });
 
 };
+
+/**
+ * Sets zoom
+ * @param Tweets found and geocoded
+ * @param Map Google Maps object
+ * @param expansionFunction function used to set latlngbounds
+ */
+function zoom(content,map){
+	
+    var markers = new Array();
+    
+    for (i=0;i<content.length;i++) {
+    	if (markers.indexOf(content[i].marker) == -1) {
+    		markers.push(content[i].marker);
+    	}
+    }
+    
+	if (global.pin) {
+		map.fitBounds(zoomFromPin(markers));		    
+    } else {
+		map.fitBounds(zoomExtents(markers));		    
+    }
+	    
+
+
+    new google.maps.MaxZoomService().getMaxZoomAtLatLng(map.getCenter(), function(MaxZoomResult){
+    	
+    	//asynchronous callback
+    	map.setZoom(Math.min(map.getZoom(),Math.min(18,MaxZoomResult.zoom)));
+    	
+	});
+	
+	/**
+	 * Zooms to show all markers, 
+	 * @param markers markers to be shown
+	 * @return latlngbounds for Google Maps API
+	 */
+	function zoomExtents(markers) {
+	
+	    var bounds = new google.maps.LatLngBounds();
+	
+	    for(i=0;i<markers.length;i++){
+			bounds.extend(markers[i].position);
+	    }
+	        
+	    return bounds;
+	
+	}
+	
+	/**
+	 * Zooms to show markers within 3x radius of pin, and displays toast to mention markers outside this radius 
+	 * @param markers markers to be shown
+	 * @return latlngbounds for Google Maps API
+	 */
+	function zoomFromPin(markers) {
+	
+		/**
+		 * Good old copy-and-pasted 3d trig
+		 */
+	    function haversine(latLngFirst, latLngSecond) {
+	    	
+	    	var lat1 = latLngFirst.lat()    	
+	    	var lon1 = latLngFirst.lng()    	
+	    	var lat2 = latLngSecond.lat()    	
+	    	var lon2 = latLngSecond.lng()    	
+	
+	    	var R = 3958.7558657440545; // miles
+			var dLat = (lat2-lat1).toRad();
+			var dLon = (lon2-lon1).toRad();
+			var lat1 = lat1.toRad();
+			var lat2 = lat2.toRad();
+			
+			var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+			        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+			var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+			
+			return R * c;
+			
+	    }    
+	
+	    var bounds = new google.maps.LatLngBounds();
+	    
+		var allOutOfBounds = true;
+		var oneOutOfBounds = false;
+	    
+	    for(i=0;i<markers.length;i++){
+	    	
+	    	var radius = $('#radius').val();
+	    	var relaxation = 1;
+	    	
+	    	//be more relaxed about smaller radii
+			if (radius <= 100) {
+				relaxation = 3;
+			} else if (radius <= 500) {
+				relaxation = 2;
+			} else if (radius <= 1000) {
+				relaxation = 1.5;
+			} else {
+				relaxation = 1;
+			}
+	
+	    	if (haversine(global.pin.getPosition(), markers[i].position) < radius * relaxation ){
+				bounds.extend(markers[i].position);
+				allOutOfBounds = false;
+	    	} else {
+	    		oneOutOfBounds = true;
+	    	}
+	    }
+	    
+	   	bounds.extend(global.pin.getPosition());
+	    
+	    if (allOutOfBounds) {
+	    	
+	    	if (!global.worldwideMessageShown) {
+
+		        $().toastmessage('showToast', {
+		             text     : 'Cannot find results within the distance specified. Zooming to show Tweets worldwide.',
+					 stayTime : 4500,  
+		             sticky   : false,
+		             position : 'middle-center',
+		             type     : 'notice'
+		        });
+		        
+		        global.worldwideMessageShown = true;
+		           		
+	    	}
+
+	        //zoom extents if none within radius
+	    	return zoomExtents(markers);
+	    	
+	    	
+	    } else if (oneOutOfBounds) {
+	    	
+	    	if (!global.localMessageShown) {
+
+		        $().toastmessage('showToast', {
+		             text     : 'Zooming to show only results within distance specified. Zoom out to see worldwide results.',
+					 stayTime : 4500,  
+		             sticky   : false,
+		             position : 'middle-center',
+		             type     : 'notice'
+		        });
+		        
+		        global.localMessageShown = true;
+			
+			}
+	
+	    }
+	    
+	    return bounds;
+	    
+	}
+
+}//ZOOM			
 
 /**
  * Handles formatting after async calls has been retrieved
@@ -545,7 +719,7 @@ function loadMap(){
 	 */
 	function getAPIURL(){
 		
-	    var APIString = 'http://search.twitter.com/search.json?callback=?&rpp=100';
+	    var APIString = 'http://search.twitter.com/search.json?callback=?&rpp=' + global.requestedLocations;
 	    var URLString = '#'
 	    var elem = document.getElementById('searchForm');
 	    var first = true;
@@ -578,8 +752,13 @@ function loadMap(){
 		
 	    var regexp = /\-*\d+[.,]\d+/g;//for ubertwitter and the like
 	    var results = data.results;
-		var userNames = '';
+		var userNames = new String();
+       	var geocodeQueue = new Array();
 	    
+    	//to avoid repeat messages
+    	global.localMessageShown = false;
+    	global.worldwideMessageShown = false;
+	        	
 		if (!results || results.length == 0) {
 	        return noResults();
 		} else {
@@ -647,7 +826,16 @@ function loadMap(){
 		 */
 	    function getLocations(userNames) {
 	    	
-	        //http://twitter.com/statuses/user_timeline.json?callback=?&count=5&id=
+	    	//toast
+	    	
+	        $().toastmessage('showToast', {
+	             text     : 'All results should come in gradually over the next minute. Feel free to search again before this search is finished.',
+				 stayTime : 4500,  
+	             sticky   : false,
+	             position : 'middle-center',
+	             type     : 'notice'
+	        });
+	        
 	        console.log('https://api.twitter.com/1/users/lookup.json?screen_name='+userNames+'&include_entities=false');
 	        $.ajax('https://api.twitter.com/1/users/lookup.json?screen_name='+userNames+'&include_entities=false', {
 	        	type: "POST",
@@ -657,37 +845,113 @@ function loadMap(){
 	            //TODO: Handle 400's better
 		        error: onTimeout,
 	            success: function(users) {
+	
 	           	    $.each(users, function(ind,user) {
-	           	    	geocodeUser(ind,user);
+	           	    	geocodeUser(user);
 	           	    });
+	           	    
+	           	    executeGeocodeTimer();
+	           	    
 	            }
 	        });
+	        
+	        
+	        function executeGeocodeTimer() {
+	        	
+	        	console.log('geocodeQueue length: ' + geocodeQueue.length);
+	        	
+	        	var size = global.searchesPerRound;
+	        	var startOfRound = 0;
+				var formatted = false;
+        		var hasResult = false;
+	        		        	
+	        	makeRound();
+	        	
+				function makeRound() {
+					
+					var increment = Math.min(size,geocodeQueue.length - startOfRound);
 
+					console.log('startOfRound at beggining of for: ' + startOfRound);
+
+	        		for (var i = startOfRound; i < startOfRound + increment; i++) {
+		        		useGoogle(geocodeQueue[i]);        			
+	        		}
+	        		
+					if (!formatted) {
+						
+						for (i=0;i<results.length;i++) {
+							if (results[i].geo_info.valid) {
+								hasResult = true;
+								break;
+							}
+						}
+	
+		        		if (hasResult) {
+					    	console.log('intitial formatting');
+						    $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
+						    $('#Map').css('left',global.horizontalMargin + 'px');
+					    	populateCaption();
+					    	zoom(global.content,global.map);
+						    formatted = true;
+		        		}
+		        		
+					}
+
+	        		startOfRound += increment;
+					console.log('startOfRound at end of for: ' + startOfRound);
+
+	        		//rezoom at interval
+	        		if (((startOfRound / global.searchesPerRound) % global.rezoomInterval) == 0) {
+				    	console.log('periodic reformatting');
+				    	populateCaption();
+				    	zoom(global.content,global.map);
+	        		}
+	        		
+	        		//recursively make another round, waiting b/c of timer limits
+	        		if (startOfRound < geocodeQueue.length) {
+	        			console.log('setting timeout');
+		        		setTimeout(makeRound, global.searchInterval);        			
+	        		}
+
+				}
+
+	        }
+	        
+	        
+	        
 	    	//LEVEL 2 ASYNC FUNCTION
 	    	
 	    	/**
 	    	 * If necessary, requests lat-lng from Google and handles response
 	    	 */
-            function geocodeUser(ind,user) {
+            function geocodeUser(user) {
             	
 	            console.log('user location: ' + user.location);
 	            
 	            if (!(user.location == null)) {
 	            	
                 	if (!(user.location.replace(/\s/g) == '')) {
-                		
-			            var locationString = translateFromTwitter(user.location);
-	
-		                if ((locationString.search(regexp) == -1) ? false : (locationString.match(regexp).length != 2) ? false : (locationString.match(regexp)[0] >= -90 && locationString.match(regexp)[0] <=90 && locationString.match(regexp)[1] >= -180 && locationString.match(regexp)[1] <= 180)) {
-		                    gotCoords(user.screen_name,locationString.match(regexp)[0],locationString.match(regexp)[1]);
+
+		                if ((user.location.search(regexp) == -1) ? false : (user.location.match(regexp).length != 2) ? false : (user.location.match(regexp)[0] >= -90 && user.location.match(regexp)[0] <=90 && user.location.match(regexp)[1] >= -180 && user.location.match(regexp)[1] <= 180)) {
+		                	
+		                	//ubertwitter and the like
+		                    gotCoords(user.screen_name,user.location.match(regexp)[0],user.location.match(regexp)[1]);
+
+						} else if (/^\d{3}$/i.test(user.location) || /^\d{3}\D/i.test(user.location) || /\D\d{3}$/i.test(user.location)|| /\D\d{3}\D/i.test(user.location)) {
+							
+							//handle area codes
+							var found = binarySearch(global.area_codes, 'area_code',  user.location.match(/\d{3}/)[0]);
+							if (found != null) {
+								gotCoords(user.screen_name,found.lat,found.lng);
+							} else {
+			           	    	geocodeQueue.push(user);
+							}
+										
 		                } else {
-		                    new google.maps.Geocoder().geocode( { 'address': locationString }, function(results, status) {
-		                        if (status == google.maps.GeocoderStatus.OK) {
-		                            gotCoords(user.screen_name,results[0].geometry.location.lat(),results[0].geometry.location.lng())
-		                        } else {
-		                        	didNotGetCoords(user.screen_name);
-		                        }
-		                    });                		
+		                	
+		                	//plain old location
+		           	    	geocodeQueue.push(user);
+		                		
 		                }
 		                
 					} else {
@@ -704,8 +968,11 @@ function loadMap(){
 	    
 	    //SYNCHRONOUS FUNCTIONS CALLED AT LEVEL 2
 	    
-        /*
+        /**
          * Assigns lat-lng to Tweet and any with duplicate user names
+         * @param userName name of user for whom coordinates have been found
+         * @param lat coordinate latitude
+         * @param lng coordinate longitude
          */
         function gotCoords(userName,lat,lng) {
         	
@@ -743,28 +1010,49 @@ function loadMap(){
 
         }
         
-        function translateFromTwitter(locationString) {
+        function useGoogle(user) {
         	
-        	locationString = locationString.replace(/^[^A-Za-z0-9\-]+/,'').replace(/[^A-Za-z0-9]+$/,'').replace(/\$/ig,'s');
+        	//apply heuristics
+        	var locationString = user.location.replace(/^[^A-Za-z0-9\-]+/,'').replace(/[^A-Za-z0-9]+$/,'').replace(/\$/ig,'s');
         	
-			if (/^\d{3}$/i.test(locationString) || /^\d{3}\D/i.test(locationString) || /\D\d{3}$/i.test(locationString)|| /\D\d{3}\D/i.test(locationString)) {
-				var found = binarySearch(global.area_codes, 'area_code',  locationString.match(/\d{3}/)[0]);
-				return ((found == null) ? locationString : (found.lat + ',' + found .lng)); 
-			} else if (/Cali/i.test(locationString) && !/Colombia/i.test(locationString)) {
-				return locationString.replace(/Cali/ig, "California");
-			} else if (/Jersey/i.test(locationString) && !/Britain/i.test(locationString) && !/Channel Island/i.test(locationString)) {
-				return locationString.replace(/Jersey/ig, "New Jersey");
+			if (/Cali/i.test(locationString) && !/California/i.test(locationString) && !/Colombia/i.test(locationString)) {
+				locationString = locationString.replace(/Cali/ig, "California");
+			} else if (/Jersey/i.test(locationString) && !/New\s*Jersey/i.test(locationString) && !/Britain/i.test(locationString) && !/Channel Island/i.test(locationString)) {
+				locationString = locationString.replace(/Jersey/ig, "New Jersey");
 			//What up, Tyga?
 			} else if (/\WRack\s*City/i.test(locationString) || /^Rack\s*City/i.test(locationString)) {
-				return locationString.replace(/Rack\s*City/ig, "Las Vegas");
+				locationString = locationString.replace(/Rack\s*City/ig, "Las Vegas");
+			} else if (/Universe/i.test(locationString)) {
+				didNotGetCoords(user.screen_name);
+				return;
 			} else if (/Cloud 9/i.test(locationString) || /Cloud Nine/i.test(locationString)) {
-				return '';
+				didNotGetCoords(user.screen_name);
+				return;
 			} else if (/Earth/i.test(locationString) && !/Texas/i.test(locationString)) {
-				return '';
-        	}
-        	
-        	return locationString;
-        	
+				didNotGetCoords(user.screen_name);
+				return;
+        	}        	
+
+            new google.maps.Geocoder().geocode( { 'address': locationString }, function(results, status) {
+
+                if (status == google.maps.GeocoderStatus.OK) {
+
+                	console.log('okay');
+                	console.log(locationString);
+                	console.log(results);
+                    console.log('\n')
+                    gotCoords(user.screen_name,results[0].geometry.location.lat(),results[0].geometry.location.lng())
+
+                } else {
+
+                	console.log('not okay');
+                    console.log('\n')
+                	didNotGetCoords(user.screen_name);
+
+                }
+
+            });             		
+        		
         }
 	    
 	    //SYNCHRONOUS FUNCTIONS AT END OF ASYNC THREADS	
@@ -799,17 +1087,14 @@ function loadMap(){
 	     */
 		function checkIfDone() {
 			var done = true;
-			var hasResults = false;
+			var hasResult = false;
 			
 			for (i=0;i<results.length;i++) {
 				if (results[i].waiting) {
 					done = false; 
-					console.log(i + ' is not done.');
 					break;
-				} else {
-					console.log(i + ' is done.');
-				}
-				if (results[i].geo_info.valid) {hasResults = true;}
+				} 
+				if (results[i].geo_info.valid) {hasResult = true;}
 			}
 			
 			if (done) {
@@ -819,18 +1104,14 @@ function loadMap(){
 	            });
 			    $('#Map').css('left',global.horizontalMargin + 'px');
 				    
-				if (hasResults){
+				if (hasResult){
 					
 					global.firstSearch = false;
 					
 					populateCaption();
 					
-				    if (global.pin) {
-				    	zoom(global.content,global.map,zoomFromPin);
-				    } else {
-					    zoom(global.content,global.map,zoomExtents);		    	
-				    }
-				    
+			    	zoom(global.content,global.map);
+
 				} else {
 					
 					if (global.firstSearch) {
@@ -857,141 +1138,6 @@ function loadMap(){
 				
 			}//if (done)
 			
-			/**
-			 * Sets zoom
-			 * @param Tweets found and geocoded
-			 * @param Map Google Maps object
-			 * @param expansionFunction function used to set latlngbounds
-			 */
-			function zoom(content,map,expansionFunction){
-				
-			    var markers = new Array();
-			    
-			    for (i=0;i<content.length;i++) {
-			    	if (markers.indexOf(content[i].marker) == -1) {
-			    		markers.push(content[i].marker);
-			    	}
-			    }
-			    
-				map.fitBounds(expansionFunction(markers));		    
-
-		        new google.maps.MaxZoomService().getMaxZoomAtLatLng(map.getCenter(), function(MaxZoomResult){
-		        	
-		        	//asynchronous callback
-		        	map.setZoom(Math.min(map.getZoom(),Math.min(18,MaxZoomResult.zoom)));
-		        	
-		    	});
-		    	
-			};
-			
-			/**
-			 * Zooms to show all markers, 
-			 * @param markers markers to be shown
-			 * @return latlngbounds for Google Maps API
-			 */
-			function zoomExtents(markers) {
-			
-			    var bounds = new google.maps.LatLngBounds();
-			
-			    for(i=0;i<markers.length;i++){
-					bounds.extend(markers[i].position);
-			    }
-			        
-			    return bounds;
-			
-			}
-			
-			/**
-			 * Zooms to show markers within 3x radius of pin, and displays toast to mention markers outside this radius 
-			 * @param markers markers to be shown
-			 * @return latlngbounds for Google Maps API
-			 */
-			function zoomFromPin(markers) {
-			
-				/**
-				 * Good old copy-and-pasted 3d trig
-				 */
-			    function haversine(latLngFirst, latLngSecond) {
-			    	
-			    	var lat1 = latLngFirst.lat()    	
-			    	var lon1 = latLngFirst.lng()    	
-			    	var lat2 = latLngSecond.lat()    	
-			    	var lon2 = latLngSecond.lng()    	
-			
-			    	var R = 3958.7558657440545; // miles
-					var dLat = (lat2-lat1).toRad();
-					var dLon = (lon2-lon1).toRad();
-					var lat1 = lat1.toRad();
-					var lat2 = lat2.toRad();
-					
-					var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-					        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
-					var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-					
-					return R * c;
-					
-			    }    
-			
-			    var bounds = new google.maps.LatLngBounds();
-			    
-				var allOutOfBounds = true;
-				var oneOutOfBounds = false;
-			    
-			    for(i=0;i<markers.length;i++){
-			    	
-			    	var radius = $('#radius').val();
-			    	var relaxation = 1;
-			    	
-			    	//be more relaxed about smaller radii
-					if (radius <= 100) {
-						relaxation = 3;
-					} else if (radius <= 500) {
-						relaxation = 2;
-					} else if (radius <= 1000) {
-						relaxation = 1.5;
-					} else {
-						relaxation = 1;
-					}
-			
-			    	if (haversine(global.pin.getPosition(), markers[i].position) < radius * relaxation ){
-						bounds.extend(markers[i].position);
-						allOutOfBounds = false;
-			    	} else {
-			    		oneOutOfBounds = true;
-			    	}
-			    }
-			    
-			   	bounds.extend(global.pin.getPosition());
-			    
-			    if (allOutOfBounds) {
-			    	
-			        $().toastmessage('showToast', {
-			             text     : 'Cannot find results within the distance specified. Zooming to show Tweets worldwide.',
-						 stayTime : 4500,  
-			             sticky   : false,
-			             position : 'middle-center',
-			             type     : 'notice'
-			        });
-			        
-			        //zoom extents if none within radius
-			    	return zoomExtents(markers);
-			    	
-			    } else if (oneOutOfBounds) {
-			
-			        $().toastmessage('showToast', {
-			             text     : 'Zooming to show only results within distance specified. Zoom out to see worldwide results.',
-						 stayTime : 4500,  
-			             sticky   : false,
-			             position : 'middle-center',
-			             type     : 'notice'
-			        });
-			
-			    }
-			    
-			    return bounds;
-			    
-			}
-
 		}
 	
 	    /**
@@ -1024,7 +1170,7 @@ function loadMap(){
 			
 		    var repeat = findSameLoc(content);
 		
-	    	if (global.getKey() < 26) {
+	    	if (global.getKey() < global.maxMarkers) {
 
 			    if (repeat) {
 					repeat.marker.title = "Multiple Tweets";
@@ -1053,7 +1199,7 @@ function loadMap(){
 						
 				}
 		    	
-			    global.addContent(content);
+			    global.pushContent(content);
 			    
 		    }
 		    			    
