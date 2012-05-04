@@ -124,7 +124,7 @@ function Global() {
 	this.requestedLocations = 50;
 	this.maxMarkers = 26;
 	this.searchInterval = 3000;//milliseconds
-	this.rezoomInterval = 2;//searchIntervals
+	this.rezoomInterval = 1;//searchIntervals
 	
 	
 	//zoom message parameters
@@ -829,7 +829,7 @@ function loadMap(){
 	    	//toast
 	    	
 	        $().toastmessage('showToast', {
-	             text     : 'All results should come in gradually over the next minute. Feel free to search again before this search is finished.',
+	             text     : 'Your map will rezoom as new results come in. Feel free to search again before this search is finished loading.',
 				 stayTime : 4500,  
 	             sticky   : false,
 	             position : 'middle-center',
@@ -916,8 +916,6 @@ function loadMap(){
 				}
 
 	        }
-	        
-	        
 	        
 	    	//LEVEL 2 ASYNC FUNCTION
 	    	
