@@ -89,9 +89,14 @@ $(document).ready(function(){
         center: google.maps.LatLng(13.4125, 103.8667),//angkor wat
         mapTypeId: google.maps.MapTypeId.SATELLITE
     };
-
+    
     var map = new google.maps.Map(document.getElementById('Map'),myOptions);
     global.setMap(map);
+
+    google.maps.event.addListener(map, 'dblclick', function() {
+    	console.log('making new rezoomBool false')
+    	global.rezoomBool = false;
+  	});
 
     populateForm();
     
@@ -125,7 +130,7 @@ function Global() {
 	this.maxMarkers = 26;
 	this.searchInterval = 3000;//milliseconds
 	this.rezoomInterval = 1;//searchIntervals
-	
+	this.rezoomBool = true;
 	
 	//zoom message parameters
 	this.worldwideMessageShown = false;
@@ -758,7 +763,8 @@ function loadMap(){
     	//to avoid repeat messages
     	global.localMessageShown = false;
     	global.worldwideMessageShown = false;
-	        	
+	    global.rezoomBool = true;
+	    
 		if (!results || results.length == 0) {
 	        return noResults();
 		} else {
@@ -891,7 +897,8 @@ function loadMap(){
 						    $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
 						    $('#Map').css('left',global.horizontalMargin + 'px');
 					    	populateCaption();
-					    	zoom(global.content,global.map);
+					    	console.log('global.rezoomBool: ' + global.rezoomBool);
+					    	zoom(global.content,global.map);					    		
 						    formatted = true;
 		        		}
 		        		
@@ -904,7 +911,9 @@ function loadMap(){
 	        		if (((startOfRound / global.searchesPerRound) % global.rezoomInterval) == 0) {
 				    	console.log('periodic reformatting');
 				    	populateCaption();
-				    	zoom(global.content,global.map);
+				    	if (global.rezoomBool) {
+					    	zoom(global.content,global.map);
+				    	}
 	        		}
 	        		
 	        		//recursively make another round, waiting b/c of timer limits
