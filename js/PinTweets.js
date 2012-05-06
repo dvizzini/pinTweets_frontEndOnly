@@ -87,8 +87,6 @@ $(document).ready(function(){
         $(this).width($('#sidebar').width()/2);
     });
 
-    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
-
     //declare map
     var myOptions = {
         zoom: 15,
@@ -377,6 +375,8 @@ function populateCaption() {
         window.scrollTo(new_position.left,new_position.top);
         
     });
+    
+	$('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
 
 };
 
