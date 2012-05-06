@@ -63,6 +63,13 @@ $(document).ready(function(){
         }
     });
 
+	//initial formatting
+    $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
+    $('.canvasText').css('padding-left',global.horizontalMargin+'px');
+    $('.canvasText').css('padding-right',global.horizontalMargin+'px');
+    $('#Map').css('left',global.horizontalMargin + 'px');
+
+	//formatting on resize
     $(window).resize(function() {
         $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
         $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
@@ -80,7 +87,6 @@ $(document).ready(function(){
         $(this).width($('#sidebar').width()/2);
     });
 
-	$('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
     $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
 
     //declare map
@@ -359,9 +365,6 @@ function populateCaption() {
         );
     });
     
-    //readjust width
-    $('.captionContent').width($('.captionDiv').width()-$('.captionLetter').outerWidth(true)-$('.captionPic').outerWidth(true)-5);
-
 	//set click listeners
     $('.captionLetter').click( function() {
     	
@@ -400,13 +403,14 @@ function zoom(content,map){
     }
 	    
 
-
-    new google.maps.MaxZoomService().getMaxZoomAtLatLng(map.getCenter(), function(MaxZoomResult){
-    	
-    	//asynchronous callback
-    	map.setZoom(Math.min(map.getZoom(),Math.min(18,MaxZoomResult.zoom)));
-    	
-	});
+	if (markers.length > 0) {
+	    new google.maps.MaxZoomService().getMaxZoomAtLatLng(map.getCenter(), function(MaxZoomResult){
+	    	
+	    	//asynchronous callback
+	    	map.setZoom(Math.min(map.getZoom(),Math.min(18,MaxZoomResult.zoom)));
+	    	
+		});		
+	}
 	
 	/**
 	 * Zooms to show all markers, 
@@ -530,16 +534,6 @@ function zoom(content,map){
 	}
 
 }//ZOOM			
-
-/**
- * Handles formatting after async calls has been retrieved
- */
-function postLoadFormat() {
-    $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
-    $('.canvasText').css('padding-left',global.horizontalMargin+'px');
-    $('.canvasText').css('padding-right',global.horizontalMargin+'px');
-    $('#loader').hide();
-};
 
 /**
  * changes canvas and canvas labels
@@ -843,8 +837,14 @@ function loadMap(){
 	        });
 	        
 	        console.log('https://api.twitter.com/1/users/lookup.json?screen_name='+userNames+'&include_entities=false');
+			//TODO: Implement this after app is registered
+	        // $.ajax('https://api.twitter.com/1/users/lookup.json', {
+	        	// type: "POST",
+	            // dataType: 'json',
+	            // data:{ 
+	            	// 'screen_name': userNames
+	            // },
 	        $.ajax('https://api.twitter.com/1/users/lookup.json?screen_name='+userNames+'&include_entities=false', {
-	        	type: "POST",
 	            crossDomain:true,
 	            dataType: 'jsonp',
 	            timeout:15000,
@@ -894,8 +894,6 @@ function loadMap(){
 	
 		        		if (hasResult) {
 					    	console.log('intitial formatting');
-						    $('.canvas').width($('#wrapper').width()-$('#sidebar').outerWidth(true)-global.horizontalMargin*2);
-						    $('#Map').css('left',global.horizontalMargin + 'px');
 					    	populateCaption();
 					    	console.log('global.rezoomBool: ' + global.rezoomBool);
 					    	zoom(global.content,global.map);					    		
@@ -1109,7 +1107,6 @@ function loadMap(){
 				$('#MapLabel').click(function() {
 		            changeCanvas('Map');
 	            });
-			    $('#Map').css('left',global.horizontalMargin + 'px');
 				    
 				if (hasResult){
 					
@@ -1141,7 +1138,7 @@ function loadMap(){
 			            
 				}
 				
-				postLoadFormat();
+				$('#loader').hide();
 				
 			}//if (done)
 			

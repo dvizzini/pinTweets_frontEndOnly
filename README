@@ -4,10 +4,11 @@ IMPORTANT: GOOGLE GEOCODING API TIMES OUT FOR MOST RESULTS. MUST THROTTLE API AN
 
 Wishlist:
 -HTML5 this up for a phone
+-Actually care about browsers other than Chrome.
 -Add node backend
 	-Enable sign-in so that people can see who they follow, use straming API?
 	-Add learning mechanism for misplacced Tweets
--Handle limit breach better. Actually read JSON's instead of relying on timeout (MUCH LESS OF AN ISSUE WITH NO API).
+	-Handle limit breach better. Use POST and the error will work. (MUCH LESS OF AN ISSUE WITH NEW API.)
 -Get hand icon to work better when dragging pin.
 
 (The MIT License)
