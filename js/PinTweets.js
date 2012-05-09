@@ -1,7 +1,5 @@
-//JS for TweetPin
+//JS for PinTweets
 //Copyright Daniel Vizzini, under MIT liscense (see source)
-
-//TODO: Handle no internet connection
 
 //IE REDIRECT
 if (navigator.appName=='Microsoft Internet Explorer' && window.location=='index.html') {
@@ -768,6 +766,7 @@ function loadMap(){
 	    var results = data.results;
 		var userNames = new String();
        	var geocodeQueue = new Array();
+       	var askGoogle = false;
 	    
     	//to avoid repeat messages
     	global.localMessageShown = false;
@@ -781,8 +780,8 @@ function loadMap(){
 				results[i].waiting = true;
 		        results[i].geo_info = {'valid':false,'exact':false,'lat':false,'lng':false};
 			}
-		} 
-			    
+		}
+		
 	    //reset map
 	    changeCanvas('Search');
 	    changeCanvas('Map');
@@ -799,24 +798,33 @@ function loadMap(){
 	        	console.log('duplicate of ' + result.from_user);
 	        	return;
 	        }
+	        askGoogle = true;
 	        userNames += result.from_user + ',';
 	    });
 	    
-	    getLocations(userNames);
+	    //initiate long process
+	    if (askGoogle) {
+		    getLocations(userNames);	    	
+	    }
 		
 		/**
 		 * Assigns lat-lng to result in case where this information is specified directly by Twitter
 		 * @param result with lat-lng recieved from Twitter  
 		 */
 	    function geotagResult(result) {
-	        result.waiting = false;
-	        result.geo_info = {
-	            'valid':true,
-	            'exact':true,
-	            'lat':result.geo.coordinates[0],
-	            'lng':result.geo.coordinates[1],
-	        };
-	        addToMap(map,result);
+	    	if (result.geo.coordinates[0] == 0 && result.geo.coordinates[1] == 0) {
+	    		console.log('filtering out directly geocoded 0,0 for ' + result.from_user);
+		        result.waiting = false;
+		        checkForDone();
+	    	} else {
+		        result.geo_info = {
+		            'valid':true,
+		            'exact':true,
+		            'lat':result.geo.coordinates[0],
+		            'lng':result.geo.coordinates[1],
+		        };
+		        addToMap(map,result);	    		
+	    	}
 	    }
 	
 		/**
@@ -996,6 +1004,12 @@ function loadMap(){
          */
         function gotCoords(userName,lat,lng) {
         	
+        	//filter out 0,0
+			if (lat == 0 && lng == 0) {
+				console.log('Filtering out 0,0 for ' + userName);
+				didNotGetCoords(userName);
+			}
+        	
 	        $.each(results,function () {
 	        	
 	            if (!this.waiting) {return;}
@@ -1163,7 +1177,7 @@ function loadMap(){
 	     * Adds result to map
 	     */
 		function addToMap(map, result) {
-		
+			
 			/**
 			 * Finds results that have been geocoded to same point
 			 */
@@ -1175,7 +1189,7 @@ function loadMap(){
 				}
 				return false;
 			}
-		
+					
 		    var content = {
 			    'text':result.text,
 			    'lat':result.geo_info.lat,
