@@ -1056,7 +1056,7 @@ function loadMap(){
 			//What up, Tyga?
 			} else if (/\WRack\s*City/i.test(locationString) || /^Rack\s*City/i.test(locationString)) {
 				locationString = locationString.replace(/Rack\s*City/ig, "Las Vegas");
-        	} else if (locationString.match(/\s+/ig).length > 3 && !/[,]/i.test(locationString)) {
+        	} else if ((/\s+/i.test(locationString) ? (locationString.match(/\s+/ig).length > 3) : false) && !/[,]/i.test(locationString)) {
 				didNotGetCoords(user.screen_name);
 				return;        		
         	} else if (/Universe/i.test(locationString)) {
