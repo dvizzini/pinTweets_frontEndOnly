@@ -1056,7 +1056,10 @@ function loadMap(){
 			//What up, Tyga?
 			} else if (/\WRack\s*City/i.test(locationString) || /^Rack\s*City/i.test(locationString)) {
 				locationString = locationString.replace(/Rack\s*City/ig, "Las Vegas");
-			} else if (/Universe/i.test(locationString)) {
+        	} else if (locationString.match(/\s+/ig).length > 3 && !/[,]/i.test(locationString)) {
+				didNotGetCoords(user.screen_name);
+				return;        		
+        	} else if (/Universe/i.test(locationString)) {
 				didNotGetCoords(user.screen_name);
 				return;
 			} else if (/Cloud 9/i.test(locationString) || /Cloud Nine/i.test(locationString)) {
@@ -1065,7 +1068,7 @@ function loadMap(){
 			} else if (/Earth/i.test(locationString) && !/Texas/i.test(locationString)) {
 				didNotGetCoords(user.screen_name);
 				return;
-        	}        	
+			}
 
             new google.maps.Geocoder().geocode( { 'address': locationString }, function(results, status) {
 
