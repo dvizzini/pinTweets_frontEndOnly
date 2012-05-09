@@ -40,7 +40,7 @@ $(document).ready(function(){
 	        	global.removeMarkers();
 	        }
         
-	        loadMap();        	
+	        loadSearch(getSearchHash());
 
         }
     });
@@ -58,8 +58,7 @@ $(document).ready(function(){
 
     $(window).bind('keypress', function(e) {
         if((e.keyCode || e.which) == 13){
-            if (global) { global.removeMarkers() };
-            loadMap();
+            loadSearch(getSearchHash());
         }
     });
 
@@ -109,6 +108,7 @@ $(document).ready(function(){
         dataType: "json",
         success:function(data) {
         	global.area_codes = data.area_codes;
+        	window.location.hash = getSearchHash();
         	loadMap();
         },
         timeout:15000,
@@ -176,10 +176,6 @@ function Global() {
 
     this.setPinListener = function(listener){
         this.pinListener = listener;
-    }
-
-    this.setSearchURL = function(URLString) {
-        this.searchURL = URLString;
     }
 
     this.removeMarkers = function() {
@@ -684,6 +680,30 @@ function binarySearch(array, keySet, key) {
     return (array[middle][keySet] != key) ? null : array[middle];
 }
 
+/**
+ * makes populates hash with search parameters 
+ */
+function getSearchHash() {
+	
+    var searchUrl = '#'
+    var elem = document.getElementById('searchForm');
+    var first = true;
+
+    for (i=1;i<elem.length;i++) { //index 0 is fieldset
+        if (elem[i].value != '' && elem[i].id != 'radius'){
+            searchUrl += (first ? '' : '&') + elem[i].id  + '=' + encodeURIComponent((elem[i].id=='from' || elem[i].id=='to') ? elem[i].value.replace('@','') : elem[i].value);
+            first = false;
+        }
+    }
+
+    if (global.pin) {
+        searchUrl += (first ? 'geocode=' : '&geocode=')+global.pin.getPosition().lat()+','+global.pin.getPosition().lng()+','+$('#radius').val()+'mi';
+    }
+
+    return searchUrl;
+
+};
+
 //LEVEL 0 ASYNC FUNCTION
 
 /**
@@ -691,7 +711,7 @@ function binarySearch(array, keySet, key) {
  */
 function loadMap(){
 	
-	var searchURL = getAPIURL();
+	var searchURL = getApiUrl();
 
     //must be on top. API does not work if map is hidden
 	changeCanvas('Search');
@@ -716,33 +736,28 @@ function loadMap(){
 	/**
 	 * makes URL to call initial Twitter API and sets global variable accordingly 
 	 */
-	function getAPIURL(){
+	function getApiUrl() {
 		
-	    var APIString = 'http://search.twitter.com/search.json?callback=?&rpp=' + global.requestedLocations;
-	    var URLString = '#'
+	    var apiString = 'http://search.twitter.com/search.json?callback=?&rpp=' + global.requestedLocations;
 	    var elem = document.getElementById('searchForm');
 	    var first = true;
 	
 	    for (i=1;i<elem.length;i++) { //index 0 is fieldset
 	        if (elem[i].value != '' && elem[i].id != 'radius'){
-	            APIString += (first ? '&q=' : '%20') + encodeURIComponent(((elem[i].id=='tweetContent') ? '' : elem[i].id+':') + ((elem[i].id=='from' || elem[i].id=='to') ? elem[i].value.replace('@',''):elem[i].value));
-	            URLString += (first ? '' : '&') + elem[i].id  + '=' + encodeURIComponent((elem[i].id=='from' || elem[i].id=='to') ? elem[i].value.replace('@','') : elem[i].value);
+	            apiString += (first ? '&q=' : '%20') + encodeURIComponent(((elem[i].id=='tweetContent') ? '' : elem[i].id+':') + ((elem[i].id=='from' || elem[i].id=='to') ? elem[i].value.replace('@',''):elem[i].value));
 	            first = false;
 	        }
 	    }
 	
 	    if (global.pin) {
-	        APIString +=  '&geocode='+global.pin.getPosition().lat()+','+global.pin.getPosition().lng()+','+$('#radius').val()+'mi';
-	        URLString += (first ? 'geocode=' : '&geocode=')+global.pin.getPosition().lat()+','+global.pin.getPosition().lng()+','+$('#radius').val()+'mi';
+	        apiString +=  '&geocode='+global.pin.getPosition().lat()+','+global.pin.getPosition().lng()+','+$('#radius').val()+'mi';
 	    }
 	
-	    console.log(APIString);
-	    global.setSearchURL(URLString);
-	    window.location.hash = global.searchURL;
+	    console.log(apiString);
 	
-	    return APIString;
+	    return apiString;
 	
-	};
+	};	
 
 	/**
 	 * Dictates how the geocoding of each Tweet should be handled
