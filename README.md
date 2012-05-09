@@ -14,10 +14,10 @@ This website maps Tweets found using Twitter's search API, principally by geocod
 
 Wishlist
 --------
-*HTML5 this up for a phone
-*Actually care about browsers other than Chrome.
-*Add node backend
-	*Enable sign-in so that people can see who they follow, use straming API?
-	*Add learning mechanism for misplacced Tweets
-	*Handle limit breach better. Use POST and the error will work. (Much less of an issue with the new Twitter lookup API.)
-*Get hand icon to work better when dragging pin.
+* HTML5 this up for a phone
+* Actually care about browsers other than Chrome.
+* Add node backend
+	* Enable sign-in so that people can see who they follow, use straming API?
+	* Add learning mechanism for misplacced Tweets
+	* Handle limit breach better. Use POST and the error will work. (Much less of an issue with the new Twitter lookup API.)
+* Get hand icon to work better when dragging pin.
