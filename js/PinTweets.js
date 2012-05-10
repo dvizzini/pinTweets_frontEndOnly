@@ -815,7 +815,8 @@ function loadMap(){
 	    	if (result.geo.coordinates[0] == 0 && result.geo.coordinates[1] == 0) {
 	    		console.log('filtering out directly geocoded 0,0 for ' + result.from_user);
 		        result.waiting = false;
-		        checkForDone();
+		        result.geo_info.exact = true;
+		        checkIfDone();
 	    	} else {
 		        result.geo_info = {
 		            'valid':true,
@@ -1058,7 +1059,10 @@ function loadMap(){
 				locationString = locationString.replace(/Rack\s*City/ig, "Las Vegas");
         	} else if ((/\s+/i.test(locationString) ? (locationString.match(/\s+/ig).length > 3) : false) && !/[,]/i.test(locationString)) {
 				didNotGetCoords(user.screen_name);
-				return;        		
+				return;
+        	} else if (/worldwide/i.test(locationString)) {
+				didNotGetCoords(user.screen_name);
+				return;
         	} else if (/Universe/i.test(locationString)) {
 				didNotGetCoords(user.screen_name);
 				return;
